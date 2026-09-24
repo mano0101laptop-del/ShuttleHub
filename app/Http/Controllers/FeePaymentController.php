@@ -276,7 +276,7 @@ class FeePaymentController extends Controller
         }
 
         $month    = $this->nextPayableMonth($passenger);
-        $currency = strtolower(config('services.stripe.currency', 'usd'));
+        $currency = strtolower(config('services.stripe.currency', 'pkr'));
         // The amount charged to the card always matches FeeSetting::amount() —
         // the same figure shown everywhere else in the app — converted to
         // Stripe's required smallest currency unit (e.g. cents), never a
