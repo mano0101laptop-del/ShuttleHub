@@ -20,7 +20,7 @@
       @endif
 
       <div class="card" style="max-width:700px;">
-        <div class="card-header"><h3><i class="fas fa-steering-wheel" style="color:var(--color-primary);margin-right:6px;"></i>{{ $driverUser->name }}</h3></div>
+        <div class="card-header"><h3><i class="fas fa-user-tie" style="color:var(--color-primary);margin-right:6px;"></i>{{ $driverUser->name }}</h3></div>
         <div class="card-body" style="display:flex;flex-direction:column;gap:12px;max-height:480px;overflow-y:auto;">
           @forelse($messages as $m)
             @php $mine = $m->sender_id === Auth::id(); @endphp

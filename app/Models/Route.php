@@ -21,15 +21,15 @@ class Route extends Model
     }
 
     /** Ordered list of stops belonging to this route. */
-    public function routeStops(): HasMany
+    public function Stops(): HasMany
     {
-        return $this->hasMany(RouteStop::class)->orderBy('sequence');
+        return $this->hasMany(Stop::class)->orderBy('sequence');
     }
 
-    /** Day-by-day operational assignments (driver/vehicle/timing) for this route. */
-    public function dailyAssignments(): HasMany
+    /** Persistent operational schedules (driver/vehicle/timing) for this route. */
+    public function schedules(): HasMany
     {
-        return $this->hasMany(DailyAssignment::class);
+        return $this->hasMany(Schedule::class, 'route_id');
     }
 
     /**
@@ -39,6 +39,6 @@ class Route extends Model
      */
     public function syncStopsCount(): void
     {
-        $this->update(['stops' => max($this->routeStops()->count(), 1)]);
+        $this->update(['stops' => max($this->Stops()->count(), 1)]);
     }
 }

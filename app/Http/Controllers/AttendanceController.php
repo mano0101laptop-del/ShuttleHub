@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Attendance;
 use App\Models\Passenger;
-use App\Models\DailyAssignment;
+use App\Models\Schedule;
 use Illuminate\Support\Facades\Hash;
 
 class AttendanceController extends Controller
@@ -29,7 +29,21 @@ class AttendanceController extends Controller
 
         $passengers = Passenger::where('status', 'Active')->orderBy('name')->get();
 
-        return view('attendance.index', compact('stats', 'attendance', 'passengers'));
+        // Pre-built as plain arrays (with route URLs resolved here in PHP) so the
+        // Blade view can hand this straight to @json() with no nested function
+        // calls / commas in the directive expression itself.
+        $qrPassengers = $passengers->map(function ($p) {
+            return [
+                'id'    => $p->id,
+                'name'  => $p->name,
+                'roll'  => $p->roll,
+                'token' => $p->qr_token,
+                'url'   => route('attendance.scan', ['token' => $p->qr_token]),
+                'dl'    => route('passengers.qr', $p),
+            ];
+        })->values();
+
+        return view('attendance.index', compact('stats', 'attendance', 'passengers', 'qrPassengers'));
     }
 
     // Manual / fingerprint attendance via form
@@ -170,21 +184,24 @@ class AttendanceController extends Controller
     }
 
     /**
-     * The schedule overrides the passenger's normal route for scanner checks.
-     * If today's schedule has an explicit passenger list, only passengers on that
-     * list may be marked on the selected bus. Older schedules with no passenger
-     * rows fall back to the passenger's permanent route for compatibility.
+     * The persistent Schedule overrides the passenger's normal route for scanner
+     * checks. If it has an explicit passenger list, only those passengers may be
+     * marked on the selected bus. Without a custom list, the permanent route is
+     * used for compatibility.
      */
-    private function passengerAllowedOnRouteToday(Passenger $passenger, int $routeId): bool
+    private function passengerAllowedOnScheduledRoute(Passenger $passenger, int $routeId): bool
     {
-        $assignment = DailyAssignment::with('passengerAssignments')
-            ->whereDate('date', today())
+        $schedule = Schedule::current()
+            ->with('passengerAssignments')
             ->where('route_id', $routeId)
-            ->where('status', '!=', 'Cancelled')
             ->first();
 
-        if ($assignment && $assignment->passengerAssignments->isNotEmpty()) {
-            return $assignment->passengerAssignments->contains('passenger_id', $passenger->id);
+        if ($schedule?->status === 'Cancelled') {
+            return false;
+        }
+
+        if ($schedule && $schedule->passengerAssignments->isNotEmpty()) {
+            return $schedule->passengerAssignments->contains('passenger_id', $passenger->id);
         }
 
         return (int) $passenger->route_id === $routeId;
@@ -210,7 +227,7 @@ class AttendanceController extends Controller
         // passenger from a different route being marked on the wrong shuttle.
         // The generic Attendance scanner does not send route_id, so its
         // existing behaviour remains unchanged.
-        if ($request->filled('route_id') && !$this->passengerAllowedOnRouteToday($passenger, (int) $request->route_id)) {
+        if ($request->filled('route_id') && !$this->passengerAllowedOnScheduledRoute($passenger, (int) $request->route_id)) {
             $selectedRoute = \App\Models\Route::find($request->route_id);
             $passengerRoute = $passenger->route?->name ?: 'another route';
             $selectedRouteName = $selectedRoute?->name ?: 'the selected route';
@@ -289,7 +306,7 @@ class AttendanceController extends Controller
 
         // The Scanner Terminal always sends route_id after a bus is selected.
         // This prevents a valid PIN being used to mark attendance on the wrong bus.
-        if ($request->filled('route_id') && !$this->passengerAllowedOnRouteToday($passenger, (int) $request->route_id)) {
+        if ($request->filled('route_id') && !$this->passengerAllowedOnScheduledRoute($passenger, (int) $request->route_id)) {
             $selectedRoute = \App\Models\Route::find($request->route_id);
             $passengerRoute = $passenger->route?->name ?: 'another route';
             $selectedRouteName = $selectedRoute?->name ?: 'the selected route';

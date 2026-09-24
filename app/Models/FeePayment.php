@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 
 class FeePayment extends Model
 {
@@ -17,8 +16,7 @@ class FeePayment extends Model
         'screenshot_path',
         'status',
         'rejection_reason',
-        'qr_token',
-        'qr_expires_at',
+        'valid_until',
         'approved_by',
         'approved_at',
         'payment_method',
@@ -28,9 +26,9 @@ class FeePayment extends Model
     ];
 
     protected $casts = [
-        'qr_expires_at' => 'date',
-        'approved_at'   => 'datetime',
-        'amount'        => 'decimal:2',
+        'valid_until' => 'date',
+        'approved_at' => 'datetime',
+        'amount'      => 'decimal:2',
     ];
 
     public function passenger(): BelongsTo
@@ -47,19 +45,19 @@ class FeePayment extends Model
     public function isApproved(): bool { return $this->status === 'approved'; }
     public function isRejected(): bool { return $this->status === 'rejected'; }
 
-    /** Approved AND the QR pass hasn't rolled past the paid month yet. */
+    /** Approved AND the pass hasn't rolled past the paid month yet. */
     public function isActive(): bool
     {
         return $this->isApproved()
-            && $this->qr_expires_at !== null
-            && $this->qr_expires_at->gte(now()->startOfDay());
+            && $this->valid_until !== null
+            && $this->valid_until->gte(now()->startOfDay());
     }
 
     public function isExpired(): bool
     {
         return $this->isApproved()
-            && $this->qr_expires_at !== null
-            && $this->qr_expires_at->lt(now()->startOfDay());
+            && $this->valid_until !== null
+            && $this->valid_until->lt(now()->startOfDay());
     }
 
     public function monthLabel(): string

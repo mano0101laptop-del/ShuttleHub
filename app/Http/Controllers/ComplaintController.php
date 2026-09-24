@@ -10,17 +10,19 @@ use Illuminate\Support\Facades\Auth;
 
 class ComplaintController extends Controller
 {
-    // ── Passenger: form to submit a complaint or feedback ──
+    /**
+     * Passenger self-service form. Admin never creates complaints — Admin
+     * only receives and manages the ones passengers submit (see index()).
+     */
     public function create()
     {
-        $passenger = Passenger::where('user_id', Auth::id())->firstOrFail();
+        $drivers = Driver::where('status', 'Active')->orderBy('name')->get(['id', 'name']);
 
-        $drivers    = Driver::where('status', 'Active')->orderBy('name')->get(['id', 'name']);
-        $passengers = Passenger::where('id', '!=', $passenger->id)
-            ->where('approval_status', 'approved')
+        $passenger = Passenger::where('user_id', Auth::id())->firstOrFail();
+        $passengers = Passenger::where('approval_status', 'approved')
+            ->where('id', '!=', $passenger->id)
             ->orderBy('name')
             ->get(['id', 'name', 'roll']);
-
         $myComplaints = $passenger->complaints()->latest()->get();
 
         return view('complaints.create', compact('passenger', 'drivers', 'passengers', 'myComplaints'));
@@ -28,31 +30,24 @@ class ComplaintController extends Controller
 
     public function store(Request $request)
     {
-        $passenger = Passenger::where('user_id', Auth::id())->firstOrFail();
+        $validated = $this->validateComplaint($request, false);
 
-        $request->validate([
-            'type'                  => 'required|string|in:complaint,feedback',
-            'against_type'          => 'nullable|string|in:driver,passenger,general',
-            'against_driver_id'     => 'nullable|required_if:against_type,driver|exists:drivers,id',
-            'against_passenger_id'  => 'nullable|required_if:against_type,passenger|exists:passengers,id',
-            'subject'               => 'required|string|max:255',
-            'message'               => 'required|string|max:2000',
-        ]);
+        $passengerId = Passenger::where('user_id', Auth::id())->firstOrFail()->id;
 
         Complaint::create([
-            'passenger_id'          => $passenger->id,
-            'type'                  => $request->type,
-            'against_type'          => $request->against_type ?: 'general',
-            'against_driver_id'     => $request->against_type === 'driver' ? $request->against_driver_id : null,
-            'against_passenger_id'  => $request->against_type === 'passenger' ? $request->against_passenger_id : null,
-            'subject'               => $request->subject,
-            'message'               => $request->message,
+            'passenger_id'         => $passengerId,
+            'type'                 => $validated['type'],
+            'against_type'         => $validated['against_type'] ?: 'general',
+            'against_driver_id'    => $validated['against_type'] === 'driver' ? $validated['against_driver_id'] : null,
+            'against_passenger_id' => $validated['against_type'] === 'passenger' ? $validated['against_passenger_id'] : null,
+            'subject'              => $validated['subject'],
+            'message'              => $validated['message'],
         ]);
 
-        return redirect()->route('complaints.create')->with('success', 'Your ' . $request->type . ' has been submitted to the admin.');
+        return redirect()->route('complaints.create')->with('success', 'Your ' . $validated['type'] . ' has been submitted to the admin.');
     }
 
-    // ── Admin: review queue ──
+    // Admin: complete review and management queue — receives complaints only, never creates them.
     public function index()
     {
         $complaints = Complaint::with('passenger', 'againstDriver', 'againstPassenger')
@@ -60,6 +55,33 @@ class ComplaintController extends Controller
             ->paginate(20);
 
         return view('complaints.index', compact('complaints'));
+    }
+
+    public function edit(Complaint $complaint)
+    {
+        $drivers = Driver::where('status', 'Active')->orderBy('name')->get(['id', 'name']);
+        $passengers = Passenger::where('approval_status', 'approved')
+            ->orderBy('name')
+            ->get(['id', 'name', 'roll']);
+
+        return view('complaints.edit', compact('complaint', 'drivers', 'passengers'));
+    }
+
+    public function update(Request $request, Complaint $complaint)
+    {
+        $validated = $this->validateComplaint($request, true);
+
+        $complaint->update([
+            'passenger_id'         => $validated['passenger_id'],
+            'type'                 => $validated['type'],
+            'against_type'         => $validated['against_type'] ?: 'general',
+            'against_driver_id'    => $validated['against_type'] === 'driver' ? $validated['against_driver_id'] : null,
+            'against_passenger_id' => $validated['against_type'] === 'passenger' ? $validated['against_passenger_id'] : null,
+            'subject'              => $validated['subject'],
+            'message'              => $validated['message'],
+        ]);
+
+        return redirect()->route('complaints.index')->with('success', 'Complaint / feedback record updated.');
     }
 
     public function respond(Request $request, Complaint $complaint)
@@ -75,5 +97,25 @@ class ComplaintController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Response saved.');
+    }
+
+    public function destroy(Complaint $complaint)
+    {
+        $complaint->delete();
+
+        return redirect()->route('complaints.index')->with('success', 'Complaint / feedback record removed.');
+    }
+
+    private function validateComplaint(Request $request, bool $requirePassenger): array
+    {
+        return $request->validate([
+            'passenger_id'         => [$requirePassenger ? 'required' : 'nullable', 'exists:passengers,id'],
+            'type'                 => 'required|string|in:complaint,feedback',
+            'against_type'         => 'required|string|in:driver,passenger,general',
+            'against_driver_id'    => 'nullable|required_if:against_type,driver|exists:drivers,id',
+            'against_passenger_id' => 'nullable|required_if:against_type,passenger|exists:passengers,id',
+            'subject'              => 'required|string|max:255',
+            'message'              => 'required|string|max:2000',
+        ]);
     }
 }

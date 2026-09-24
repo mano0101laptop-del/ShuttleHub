@@ -169,10 +169,10 @@
                   </div>
 
                   <form id="security-pin-form" class="scanner-pin-form" autocomplete="off">
-                    <label for="scanner-student-roll">Passenger ID / Roll No</label>
+                    <label for="scanner-passenger-roll">Passenger ID / Roll No</label>
                     <div class="scanner-pin-field">
                       <i class="fas fa-id-card"></i>
-                      <input id="scanner-student-roll" type="text" maxlength="100" placeholder="e.g. 2026-CS-014" required>
+                      <input id="scanner-passenger-roll" type="text" maxlength="100" placeholder="e.g. 2026-CS-014" required>
                     </div>
 
                     <label for="scanner-security-pin">Security PIN</label>
@@ -288,8 +288,8 @@ function renderBusDetails(data) {
   document.getElementById('scan-route-path').textContent = path;
   document.getElementById('scan-stops').innerHTML = stopListHtml(data.stops);
 
-  const assignmentText = data.assignment?.today_specific
-    ? `Today's assignment${data.assignment.departure_time ? ' · Departure ' + data.assignment.departure_time : ''}`
+  const assignmentText = data.assignment?.schedule_specific
+    ? `Active Schedule${data.assignment.departure_time ? ' · Departure ' + data.assignment.departure_time : ''}`
     : 'Using the bus\'s default route assignment';
   document.getElementById('scan-assignment-note').innerHTML = `<i class="fas fa-calendar-check"></i> ${escapeHtml(assignmentText)}`;
 }
@@ -355,7 +355,7 @@ function changeBus() {
   setProgress(false);
   scanFeedback('', '');
   renderPassengerCard(null);
-  document.getElementById('scanner-student-roll').value = '';
+  document.getElementById('scanner-passenger-roll').value = '';
   document.getElementById('scanner-security-pin').value = '';
   setAttendanceModeUi('qr');
   document.getElementById('scanner-bus-number').focus();
@@ -388,7 +388,7 @@ async function switchAttendanceMode(mode) {
   if (nextMode === 'qr') {
     startScanner();
   } else {
-    setTimeout(() => document.getElementById('scanner-student-roll').focus(), 50);
+    setTimeout(() => document.getElementById('scanner-passenger-roll').focus(), 50);
   }
 }
 
@@ -521,7 +521,7 @@ document.getElementById('security-pin-form').addEventListener('submit', async (e
   event.preventDefault();
   if (pinBusy || !selectedBus) return;
 
-  const rollInput = document.getElementById('scanner-student-roll');
+  const rollInput = document.getElementById('scanner-passenger-roll');
   const pinInput = document.getElementById('scanner-security-pin');
   const submit = document.getElementById('security-pin-submit');
   const roll = rollInput.value.trim();

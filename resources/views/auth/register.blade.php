@@ -1,5 +1,5 @@
 @extends('layout.app')
-@section('title', 'Apply for Transport — Shuttle Hub')
+@section('title', 'Passenger Transport Registration — Shuttle Hub')
 @section('content')
 
 <div class="screen active" id="screen-register">
@@ -11,7 +11,7 @@
         <div class="auth-brand-name"><span>Shuttle</span> Hub</div>
       </div>
 
-      <h1 style="font-size:26px;">Apply for Transport</h1>
+      <h1 style="font-size:26px;">Passenger Transport Registration</h1>
       <p class="sub" style="margin-bottom:20px;">Fill in your details to request a transport pass</p>
 
       @if($errors->any())
@@ -27,58 +27,104 @@
         {{-- Always passenger for public signup --}}
         <input type="hidden" name="role" value="passenger">
 
+        <div style="font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-muted);margin:4px 0 12px;">Passenger Information</div>
+
         <div class="form-grid">
           <div class="rd-wrap form-grid--full">
             <label class="rd-label">Full Name *</label>
             <div style="position:relative;">
               <i class="fas fa-user"></i>
               <input class="rd-input" type="text" name="name"
-                     value="{{ old('name') }}" placeholder="Your full name" required>
+                     value="{{ old('name') }}" placeholder="Enter Full Name" required>
             </div>
           </div>
 
+          <div class="rd-wrap">
+            <label class="rd-label">College ID *</label>
+            <div style="position:relative;">
+              <i class="fas fa-id-badge"></i>
+              <input class="rd-input" type="text" name="roll"
+                     value="{{ old('roll') }}" placeholder="Enter College ID" required>
+            </div>
+          </div>
+
+          <div class="rd-wrap">
+            <label class="rd-label">Contact Number *</label>
+            <div style="position:relative;">
+              <i class="fas fa-phone"></i>
+              <input class="rd-input" type="tel" name="contact_number"
+                     value="{{ old('contact_number') }}" placeholder="Enter Contact Number" required>
+            </div>
+          </div>
+
+          <div class="rd-wrap">
+            <label class="rd-label">Passenger Type *</label>
+            <div style="position:relative;">
+              <i class="fas fa-user-tag"></i>
+              <select class="rd-input" name="passenger_type" required>
+                <option value="" disabled {{ old('passenger_type') ? '' : 'selected' }}>Student / Teacher / Staff</option>
+                <option value="Student" {{ old('passenger_type')==='Student'?'selected':'' }}>Student</option>
+                <option value="Teacher" {{ old('passenger_type')==='Teacher'?'selected':'' }}>Teacher</option>
+                <option value="Staff" {{ old('passenger_type')==='Staff'?'selected':'' }}>Staff</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="rd-wrap">
+            <label class="rd-label">Select Route *</label>
+            <div style="position:relative;">
+              <i class="fas fa-route"></i>
+              <select class="rd-input" name="route_id" id="route-select" required>
+                <option value="" disabled {{ old('route_id') ? '' : 'selected' }}>Select Route</option>
+                @forelse($routes as $route)
+                  <option value="{{ $route->id }}" {{ (string) old('route_id') === (string) $route->id ? 'selected' : '' }}>
+                    {{ $route->name }} · {{ $route->from }} → {{ $route->to }}
+                  </option>
+                @empty
+                  <option value="" disabled>No routes available yet</option>
+                @endforelse
+              </select>
+            </div>
+          </div>
+
+          <div class="rd-wrap">
+            <label class="rd-label">Pickup Stop *</label>
+            <div style="position:relative;">
+              <i class="fas fa-location-dot"></i>
+              <select class="rd-input" name="stop_id" id="stop-select" required>
+                <option value="">— Select a route first —</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="rd-wrap form-grid--full">
+            <label class="rd-label">Address *</label>
+            <div style="position:relative;">
+              <i class="fas fa-house"></i>
+              <input class="rd-input" type="text" name="address"
+                     value="{{ old('address') }}" placeholder="Enter Address" required>
+            </div>
+          </div>
+
+          <div class="rd-wrap">
+            <label class="rd-label">Emergency Contact *</label>
+            <div style="position:relative;">
+              <i class="fas fa-phone-volume"></i>
+              <input class="rd-input" type="tel" name="emergency_contact"
+                     value="{{ old('emergency_contact') }}" placeholder="Enter Emergency Contact" required>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-muted);margin:22px 0 12px;padding-top:18px;border-top:1px solid var(--color-border);">Account Details</div>
+
+        <div class="form-grid">
           <div class="rd-wrap form-grid--full">
             <label class="rd-label">Email Address *</label>
             <div style="position:relative;">
               <i class="fas fa-envelope"></i>
               <input class="rd-input" type="email" name="email"
                      value="{{ old('email') }}" placeholder="you@example.com" required>
-            </div>
-          </div>
-
-          <div class="rd-wrap">
-            <label class="rd-label">Department / Class *</label>
-            <div style="position:relative;">
-              <i class="fas fa-building-columns"></i>
-              <input class="rd-input" type="text" name="department"
-                     value="{{ old('department') }}" placeholder="e.g. CS — Sem 4" required>
-            </div>
-          </div>
-
-          <div class="rd-wrap">
-            <label class="rd-label">Preferred Stop <span style="opacity:.5;">(optional)</span></label>
-            <div class="rd-select" id="stop-select">
-              <button type="button" class="rd-select-trigger" id="stop-select-trigger">
-                <i class="fas fa-map-pin"></i>
-                <span class="rd-select-value placeholder" id="stop-select-value">Select your pickup stop</span>
-                <i class="fas fa-chevron-down rd-select-caret"></i>
-              </button>
-              <div class="rd-select-panel" id="stop-select-panel">
-                <div class="rd-select-option" data-value="" data-label="No preference">
-                  <span class="rd-select-option-main">— No preference —</span>
-                </div>
-                @forelse($routes as $route)
-                  <div class="rd-select-option" data-value="{{ $route->from }}" data-label="{{ $route->from }}">
-                    <span class="rd-select-option-main">{{ $route->from }}</span>
-                    <span class="rd-select-option-sub">{{ $route->name }}</span>
-                  </div>
-                @empty
-                  <div class="rd-select-option rd-select-option--disabled">
-                    <span class="rd-select-option-main">No routes available yet</span>
-                  </div>
-                @endforelse
-              </div>
-              <input type="hidden" name="stop" id="stop-input" value="{{ old('stop') }}">
             </div>
           </div>
 
@@ -105,42 +151,13 @@
           </div>
         </div>
 
-        {{-- Security PIN --}}
-        <div class="fp-box">
-          <div class="fp-box-head">
-            <i class="fas fa-fingerprint"></i>
-            <div>
-              <div class="t">Attendance PIN</div>
-              <div class="d">Used to verify your identity when marking attendance.</div>
-            </div>
-          </div>
-
-          <div class="form-grid">
-            <div class="rd-wrap" style="margin-bottom:0;">
-              <label class="rd-label">Security PIN *</label>
-              <div style="position:relative;">
-                <i class="fas fa-fingerprint"></i>
-                <input class="rd-input" type="password" id="fp-pin" name="fingerprint_data"
-                       placeholder="6–20 characters" minlength="6" maxlength="20"
-                       oninput="checkFp()" required>
-              </div>
-            </div>
-
-            <div class="rd-wrap" style="margin-bottom:0;">
-              <label class="rd-label">Confirm PIN *</label>
-              <div style="position:relative;">
-                <i class="fas fa-fingerprint"></i>
-                <input class="rd-input" type="password" id="fp-pin-confirm"
-                       placeholder="Re-enter PIN" minlength="6" maxlength="20"
-                       oninput="checkFp()" required>
-              </div>
-            </div>
-          </div>
-          <div id="reg-fp-status" class="pwd-status" style="margin-top:10px;"></div>
-        </div>
+        <label style="display:flex;align-items:flex-start;gap:8px;margin-top:18px;font-size:12.5px;color:var(--color-text-muted);cursor:pointer;">
+          <input type="checkbox" name="confirm" value="1" required style="margin-top:2px;">
+          <span>I confirm that the information provided is correct.</span>
+        </label>
 
         <button type="submit" class="btn-login" style="margin-top:20px;">
-          <i class="fas fa-paper-plane"></i> Submit Application
+          <i class="fas fa-paper-plane"></i> Submit Registration
         </button>
       </form>
 
@@ -155,7 +172,7 @@
         <p>Apply once and your application goes straight to the transport office for review — no paperwork, no queues.</p>
         <div class="auth-feature-list">
           <div class="auth-feature"><i class="fas fa-bolt"></i> Fast, one-page application</div>
-          <div class="auth-feature"><i class="fas fa-shield-halved"></i> Your PIN is securely hashed</div>
+          <div class="auth-feature"><i class="fas fa-shield-halved"></i> Your password is securely hashed</div>
           <div class="auth-feature"><i class="fas fa-bell"></i> Track your approval status live</div>
         </div>
       </div>
@@ -179,86 +196,60 @@ function checkPasswords() {
   }
 }
 
-function checkFp() {
-  const p = document.getElementById('fp-pin').value;
-  const c = document.getElementById('fp-pin-confirm').value;
-  const s = document.getElementById('reg-fp-status');
-  if (!c) { s.textContent = ''; return; }
-  if (p === c && p.length >= 6) {
-    s.innerHTML = '<i class="fas fa-circle-check" style="color:#16A34A"></i> PINs match.';
-    s.style.color = '#16A34A';
-  } else {
-    s.innerHTML = '<i class="fas fa-circle-xmark" style="color:#DC2626"></i> PINs do not match.';
-    s.style.color = '#DC2626';
-  }
-}
-
 document.getElementById('reg-form').addEventListener('submit', function(e) {
   const p  = document.getElementById('reg-password').value;
   const pc = document.getElementById('reg-password-confirm').value;
-  const fp = document.getElementById('fp-pin').value;
-  const fc = document.getElementById('fp-pin-confirm').value;
 
   if (p !== pc) {
     e.preventDefault();
     alert('Passwords do not match. Please re-enter.');
     document.getElementById('reg-password-confirm').focus();
-    return;
-  }
-  if (fp !== fc) {
-    e.preventDefault();
-    alert('Security PINs do not match. Please re-enter.');
-    document.getElementById('fp-pin-confirm').focus();
   }
 });
 
-(function () {
-  const wrap    = document.getElementById('stop-select');
-  if (!wrap) return;
+// Route → Pickup Stop cascading dropdown (same pattern used on the admin
+// "Register Passenger" form) so applicants can only pick a stop that
+// actually belongs to the route they selected.
+@php
+  $routeStopData = $routes->mapWithKeys(function ($route) {
+    return [$route->id => $route->Stops->map(function ($stop) {
+      return ['id' => $stop->id, 'name' => $stop->name];
+    })->values()];
+  });
+@endphp
+const routeStopData = @json($routeStopData);
+const oldStopId = @json(old('stop_id'));
 
-  const trigger = document.getElementById('stop-select-trigger');
-  const panel   = document.getElementById('stop-select-panel');
-  const valueEl = document.getElementById('stop-select-value');
-  const input   = document.getElementById('stop-input');
-  const options = Array.from(panel.querySelectorAll('.rd-select-option:not(.rd-select-option--disabled)'));
+function populateStops() {
+  const routeId = document.getElementById('route-select').value;
+  const stopSelect = document.getElementById('stop-select');
+  const stops = routeStopData[routeId] || null;
 
-  function close() { wrap.classList.remove('open'); }
-  function open()  { wrap.classList.add('open'); }
+  stopSelect.innerHTML = '';
 
-  function select(opt) {
-    const val = opt.dataset.value;
-    input.value = val;
-    valueEl.textContent = opt.dataset.label;
-    valueEl.classList.toggle('placeholder', val === '');
-    options.forEach(o => o.classList.remove('active'));
-    opt.classList.add('active');
+  if (!stops || !stops.length) {
+    stopSelect.innerHTML = '<option value="">— Select a route first —</option>';
+    return;
   }
 
-  trigger.addEventListener('click', function (e) {
-    e.stopPropagation();
-    wrap.classList.contains('open') ? close() : open();
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Select Pickup Stop';
+  placeholder.disabled = true;
+  stopSelect.appendChild(placeholder);
+
+  stops.forEach(function (stop) {
+    const opt = document.createElement('option');
+    opt.value = stop.id;
+    opt.textContent = stop.name;
+    if (String(oldStopId || '') === String(stop.id)) opt.selected = true;
+    stopSelect.appendChild(opt);
   });
 
-  options.forEach(function (opt) {
-    opt.addEventListener('click', function () {
-      select(opt);
-      close();
-    });
-  });
+  if (!String(oldStopId || '')) placeholder.selected = true;
+}
 
-  document.addEventListener('click', function (e) {
-    if (!wrap.contains(e.target)) close();
-  });
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') close();
-  });
-
-  // Re-apply the previously submitted value after a failed validation redirect.
-  if (input.value) {
-    const match = options.find(o => o.dataset.value === input.value);
-    if (match) select(match);
-  }
-})();
+document.getElementById('route-select').addEventListener('change', populateStops);
+document.addEventListener('DOMContentLoaded', populateStops);
 </script>
 @endsection

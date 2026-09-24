@@ -6,7 +6,6 @@ use App\Models\FeePayment;
 use App\Models\FeeSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
@@ -30,9 +29,6 @@ function makeApprovedPassenger(string $emailPrefix): array
         'department'           => 'CS',
         'status'               => 'Active',
         'approval_status'      => 'approved',
-        'qr_token'             => Passenger::generateQrToken(),
-        'fingerprint_hash'     => Hash::make('123456'),
-        'fingerprint_enrolled' => true,
     ]);
 
     return [$user, $passenger];
@@ -58,8 +54,6 @@ test('passenger cannot pay before their transport application is approved', func
     Passenger::create([
         'user_id' => $user->id, 'name' => 'Pending Guy', 'roll' => 'FEE-PEND', 'department' => 'CS',
         'status' => 'Inactive', 'approval_status' => 'pending',
-        'qr_token' => Passenger::generateQrToken(),
-        'fingerprint_hash' => Hash::make('123456'), 'fingerprint_enrolled' => true,
     ]);
 
     Storage::fake('public');
@@ -125,9 +119,9 @@ test('admin approving a payment extends validity through end of that month', fun
 
     $payment->refresh();
     expect($payment->status)->toBe('approved');
-    expect($payment->qr_expires_at->toDateString())->toBe(now()->endOfMonth()->toDateString());
+    expect($payment->valid_until->toDateString())->toBe(now()->endOfMonth()->toDateString());
     expect($payment->isActive())->toBeTrue();
-    expect($passenger->fresh()->qrIsActive())->toBeTrue();
+    expect($passenger->fresh()->hasActivePass())->toBeTrue();
 });
 
 test('admin rejecting a payment clears any validity window and records a reason', function () {
@@ -150,7 +144,7 @@ test('admin rejecting a payment clears any validity window and records a reason'
     $payment->refresh();
     expect($payment->status)->toBe('rejected');
     expect($payment->rejection_reason)->toBe('Screenshot unreadable');
-    expect($payment->qr_token)->toBeNull();
+    expect($payment->valid_until)->toBeNull();
 });
 
 test('a passenger paying again after an active pass gets scheduled for the following month', function () {
@@ -159,7 +153,7 @@ test('a passenger paying again after an active pass gets scheduled for the follo
     FeePayment::create([
         'passenger_id' => $passenger->id, 'month' => now()->format('Y-m'), 'amount' => 1000,
         'tid' => 'TXN-CUR', 'screenshot_path' => 'x.jpg', 'status' => 'approved',
-        'qr_expires_at' => now()->endOfMonth(),
+        'valid_until' => now()->endOfMonth(),
     ]);
 
     Storage::fake('public');
@@ -169,4 +163,46 @@ test('a passenger paying again after an active pass gets scheduled for the follo
 
     $next = FeePayment::where('tid', 'TXN-NEXT')->first();
     expect($next->month)->toBe(now()->addMonth()->format('Y-m'));
+});
+
+test('admin can configure JazzCash and Easypaisa while incharge cannot change payment settings', function () {
+    $admin = User::create(['name' => 'A', 'email' => 'walletadmin@t.com', 'password' => bcrypt('x'), 'role' => 'admin']);
+    $incharge = User::create(['name' => 'I', 'email' => 'walletincharge@t.com', 'password' => bcrypt('x'), 'role' => 'incharge']);
+
+    $this->actingAs($admin)->put('/fee-payments/settings', [
+        'monthly_fee' => 1500,
+        'jazzcash_number' => '03001234567',
+        'easypaisa_number' => '03111234567',
+    ])->assertRedirect();
+
+    $setting = FeeSetting::current()->fresh();
+    expect($setting->jazzcash_number)->toBe('03001234567');
+    expect($setting->easypaisa_number)->toBe('03111234567');
+
+    $this->actingAs($incharge)->put('/fee-payments/settings', [
+        'monthly_fee' => 999,
+        'jazzcash_number' => '0000',
+        'easypaisa_number' => '0000',
+    ])->assertForbidden();
+
+    expect((float) $setting->fresh()->monthly_fee)->toEqual(1500.0);
+});
+
+test('passenger can submit JazzCash as an additional manual-review payment option', function () {
+    [$user, $passenger] = makeApprovedPassenger('jazz');
+    FeeSetting::current()->update(['monthly_fee' => 1200, 'jazzcash_number' => '03001234567']);
+    Storage::fake('local');
+
+    $this->actingAs($user)->post('/my-fee/pay', [
+        'payment_method' => 'jazzcash',
+        'tid' => 'JC-12345',
+        'screenshot' => UploadedFile::fake()->image('jazzcash.jpg'),
+    ])->assertRedirect('/my-fee');
+
+    $this->assertDatabaseHas('fee_payments', [
+        'passenger_id' => $passenger->id,
+        'payment_method' => 'jazzcash',
+        'tid' => 'JC-12345',
+        'status' => 'pending',
+    ]);
 });

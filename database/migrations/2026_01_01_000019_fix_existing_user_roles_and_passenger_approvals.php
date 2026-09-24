@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
  * old _017 migration, but ONLY if they have no linked Passenger record AND
  * their role is still 'passenger' (meaning it was never explicitly set).
  *
- * Users explicitly registered as 'incharge', 'driver', or 'scanner' are
+ * Users explicitly registered as 'incharge' or 'driver' are
  * left untouched — they will not have a Passenger record by design.
  *
  * Also marks any passenger records with no user_id (admin-created before
@@ -24,7 +24,7 @@ return new class extends Migration
     {
         // Find users with no passenger record whose role is STILL 'passenger'.
         // These are accounts that were created before the role system existed
-        // and got the wrong default. Do NOT touch incharge/driver/scanner —
+        // and got the wrong default. Do NOT touch incharge/driver accounts —
         // they legitimately have no passenger record.
         $wronglyDefaultedIds = DB::table('users')
             ->leftJoin('passengers', 'users.id', '=', 'passengers.user_id')

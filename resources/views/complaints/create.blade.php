@@ -44,7 +44,7 @@
               </div>
               <div class="lf-group" id="driver-pick" style="display:none;">
                 <label class="lf-label">Select Driver</label>
-                <div class="lf-input-wrap"><i class="fas fa-steering-wheel"></i>
+                <div class="lf-input-wrap"><i class="fas fa-user-tie"></i>
                   <select class="lf-input" name="against_driver_id">
                     <option value="">— Select —</option>
                     @foreach($drivers as $d)<option value="{{ $d->id }}">{{ $d->name }}</option>@endforeach
@@ -77,6 +77,7 @@
           </div>
         </div>
 
+        @if(Auth::user()->role === 'passenger')
         <div class="card">
           <div class="card-header"><h3>My Submissions</h3></div>
           <div class="card-body">
@@ -101,6 +102,7 @@
             </table>
           </div>
         </div>
+        @endif
       </div>
     </div>
   </div>

@@ -7,7 +7,9 @@
 
   <div class="main">
     <x-topbar title="Vehicles">
-      <a href="{{ route('vehicles.create') }}" class="btn btn-P"><i class="fas fa-plus"></i> Add Vehicle</a>
+      @if(Auth::user()->role === 'admin')
+        <a href="{{ route('vehicles.create') }}" class="btn btn-P"><i class="fas fa-plus"></i> Add Vehicle</a>
+      @endif
     </x-topbar>
 
     <div class="content">
@@ -19,7 +21,11 @@
         <div class="card-body">
           <table class="tbl">
             <thead>
-              <tr><th>#</th><th>Vehicle No</th><th>Type</th><th>Capacity</th><th>Driver</th><th>Route</th><th>Status</th><th>Actions</th></tr>
+              <tr><th>#</th><th>Vehicle No</th><th>Type</th><th>Capacity</th><th>Driver</th><th>Route</th><th>Status</th>
+                @if(Auth::user()->role === 'admin')
+                  <th>Actions</th>
+                @endif
+              </tr>
             </thead>
             <tbody>
               @forelse($vehicles as $v)
@@ -35,16 +41,18 @@
                     {{ $v->status }}
                   </span>
                 </td>
+                @if(Auth::user()->role === 'admin')
                 <td>
-                  <a href="{{ route('vehicles.edit', $v) }}" class="btn btn-S btn-sm"><i class="fas fa-edit"></i></a>
-                  <form method="POST" action="{{ route('vehicles.destroy', $v) }}" style="display:inline" onsubmit="return confirm('Delete this vehicle?')">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="btn btn-ERR btn-sm"><i class="fas fa-trash"></i></button>
-                  </form>
+                    <a href="{{ route('vehicles.edit', $v) }}" class="btn btn-S btn-sm"><i class="fas fa-edit"></i></a>
+                    <form method="POST" action="{{ route('vehicles.destroy', $v) }}" style="display:inline" onsubmit="return confirm('Delete this vehicle?')">
+                      @csrf @method('DELETE')
+                      <button type="submit" class="btn btn-ERR btn-sm"><i class="fas fa-trash"></i></button>
+                    </form>
                 </td>
+                @endif
               </tr>
               @empty
-              <tr class="empty-row"><td colspan="8">No vehicles found. <a href="{{ route('vehicles.create') }}" style="color:var(--color-primary);">Add one →</a></td></tr>
+              <tr class="empty-row"><td colspan="{{ Auth::user()->role === 'admin' ? 8 : 7 }}">No vehicles found.@if(Auth::user()->role === 'admin') <a href="{{ route('vehicles.create') }}" style="color:var(--color-primary);">Add one →</a>@endif</td></tr>
               @endforelse
             </tbody>
           </table>

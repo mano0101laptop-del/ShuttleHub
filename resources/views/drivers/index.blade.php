@@ -7,7 +7,9 @@
 
   <div class="main">
     <x-topbar title="Drivers">
-      <a href="{{ route('drivers.create') }}" class="btn btn-P"><i class="fas fa-user-plus"></i> Add Driver</a>
+      @if(Auth::user()->role === 'admin')
+        <a href="{{ route('drivers.create') }}" class="btn btn-P"><i class="fas fa-user-plus"></i> Add Driver</a>
+      @endif
     </x-topbar>
 
     <div class="content">
@@ -29,7 +31,11 @@
         <div class="card-body">
           <table class="tbl">
             <thead>
-              <tr><th>#</th><th>Photo</th><th>Name</th><th>Phone</th><th>License</th><th>Vehicle</th><th>Experience</th><th>Status</th><th>Actions</th></tr>
+              <tr><th>#</th><th>Photo</th><th>Name</th><th>Phone</th><th>License</th><th>Vehicle</th><th>Experience</th><th>Status</th>
+                @if(Auth::user()->role === 'admin')
+                  <th>Actions</th>
+                @endif
+              </tr>
             </thead>
             <tbody>
               @forelse($drivers as $d)
@@ -50,26 +56,28 @@
                 <td>
                   <span class="badge {{ $d->status=='Active' ? 'badge-G' : 'badge-ERR' }}">{{ $d->status }}</span>
                 </td>
+                @if(Auth::user()->role === 'admin')
                 <td style="white-space:nowrap;">
                   <a href="{{ route('drivers.show', $d) }}" class="btn btn-S btn-sm" title="View profile"><i class="fas fa-eye"></i></a>
                   @if($d->user)
                     <a href="{{ route('messages.thread', $d->user_id) }}" class="btn btn-S btn-sm" title="Message driver"><i class="fas fa-comment"></i></a>
                   @endif
-                  <a href="{{ route('drivers.edit', $d) }}" class="btn btn-S btn-sm" title="Edit"><i class="fas fa-edit"></i></a>
-                  @if($d->user)
-                    <form method="POST" action="{{ route('drivers.reset-password', $d) }}" style="display:inline" onsubmit="return confirm('Reset {{ $d->name }}\'s portal password?')">
-                      @csrf
-                      <button type="submit" class="btn btn-S btn-sm" title="Reset Password"><i class="fas fa-key"></i></button>
+                    <a href="{{ route('drivers.edit', $d) }}" class="btn btn-S btn-sm" title="Edit"><i class="fas fa-edit"></i></a>
+                    @if($d->user)
+                      <form method="POST" action="{{ route('drivers.reset-password', $d) }}" style="display:inline" onsubmit="return confirm('Reset {{ $d->name }}\'s portal password?')">
+                        @csrf
+                        <button type="submit" class="btn btn-S btn-sm" title="Reset Password"><i class="fas fa-key"></i></button>
+                      </form>
+                    @endif
+                    <form method="POST" action="{{ route('drivers.destroy', $d) }}" style="display:inline" onsubmit="return confirm('Delete this driver?')">
+                      @csrf @method('DELETE')
+                      <button type="submit" class="btn btn-ERR btn-sm"><i class="fas fa-trash"></i></button>
                     </form>
-                  @endif
-                  <form method="POST" action="{{ route('drivers.destroy', $d) }}" style="display:inline" onsubmit="return confirm('Delete this driver?')">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="btn btn-ERR btn-sm"><i class="fas fa-trash"></i></button>
-                  </form>
                 </td>
+                @endif
               </tr>
               @empty
-              <tr class="empty-row"><td colspan="9">No drivers found. <a href="{{ route('drivers.create') }}" style="color:var(--color-primary);">Add one →</a></td></tr>
+              <tr class="empty-row"><td colspan="{{ Auth::user()->role === 'admin' ? 9 : 8 }}">No drivers found.@if(Auth::user()->role === 'admin') <a href="{{ route('drivers.create') }}" style="color:var(--color-primary);">Add one →</a>@endif</td></tr>
               @endforelse
             </tbody>
           </table>

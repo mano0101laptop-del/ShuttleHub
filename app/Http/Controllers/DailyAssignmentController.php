@@ -34,7 +34,7 @@ class DailyAssignmentController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('schedule.index', compact('assignments', 'date', 'unassignedRoutes'));
+        return view('daily-assignments.index', compact('assignments', 'date', 'unassignedRoutes'));
     }
 
     public function create(Request $request)
@@ -57,7 +57,7 @@ class DailyAssignmentController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('schedule.create', compact(
+        return view('daily-assignments.create', compact(
             'date', 'routes', 'selectedRoute', 'drivers', 'vehicles', 'students'
         ));
     }
@@ -93,8 +93,8 @@ class DailyAssignmentController extends Controller
             return $assignment->fresh();
         });
 
-        return redirect()->route('schedule.index', ['date' => $assignment->date->toDateString()])
-            ->with('success', 'Schedule saved with driver, bus, stops, passengers and timings.');
+        return redirect()->route('daily-assignments.index', ['date' => $assignment->date->toDateString()])
+            ->with('success', 'Daily assignment saved with driver, bus, stops, students and timings.');
     }
 
     public function edit(Request $request, DailyAssignment $assignment)
@@ -130,7 +130,7 @@ class DailyAssignmentController extends Controller
             $route = $routes->firstWhere('id', (int) $request->query('route_id')) ?: $route;
         }
 
-        return view('schedule.edit', compact('assignment', 'drivers', 'vehicles', 'students', 'routes', 'route'));
+        return view('daily-assignments.edit', compact('assignment', 'drivers', 'vehicles', 'students', 'routes', 'route'));
     }
 
     public function update(Request $request, DailyAssignment $assignment)
@@ -157,8 +157,8 @@ class DailyAssignmentController extends Controller
             $this->syncPassengers($assignment, $request);
         });
 
-        return redirect()->route('schedule.index', ['date' => $assignment->date->toDateString()])
-            ->with('success', 'Schedule updated successfully.');
+        return redirect()->route('daily-assignments.index', ['date' => $assignment->date->toDateString()])
+            ->with('success', 'Daily assignment updated successfully.');
     }
 
     public function destroy(DailyAssignment $assignment)
@@ -166,8 +166,8 @@ class DailyAssignmentController extends Controller
         $date = $assignment->date->toDateString();
         $assignment->delete();
 
-        return redirect()->route('schedule.index', ['date' => $date])
-            ->with('success', 'Schedule removed.');
+        return redirect()->route('daily-assignments.index', ['date' => $date])
+            ->with('success', 'Daily assignment removed.');
     }
 
     private function resolveDate($raw): \Carbon\Carbon
@@ -190,7 +190,7 @@ class DailyAssignmentController extends Controller
             'notes'                    => 'nullable|string|max:1000',
             'status'                   => 'required|string|in:Scheduled,In Progress,Completed,Cancelled',
             'selected_stop_ids'        => 'required|array|min:1',
-            'selected_stop_ids.*'      => 'integer|exists:route_stops,id',
+            'selected_stop_ids.*'      => 'integer|exists:stops,id',
             'stop_pickup_time'         => 'nullable|array',
             'stop_pickup_time.*'       => 'nullable|string|max:50',
             'stop_dropoff_time'        => 'nullable|array',
@@ -198,7 +198,7 @@ class DailyAssignmentController extends Controller
             'passenger_ids'            => 'nullable|array',
             'passenger_ids.*'          => 'integer|exists:passengers,id',
             'student_stop'             => 'nullable|array',
-            'student_stop.*'           => 'nullable|integer|exists:route_stops,id',
+            'student_stop.*'           => 'nullable|integer|exists:stops,id',
             'student_pickup_time'      => 'nullable|array',
             'student_pickup_time.*'    => 'nullable|string|max:50',
             'student_dropoff_time'     => 'nullable|array',
@@ -227,7 +227,7 @@ class DailyAssignmentController extends Controller
 
             if ($validPassengerCount !== $passengerIds->count()) {
                 throw ValidationException::withMessages([
-                    'passenger_ids' => 'Only active, approved passengers can be added to a schedule.',
+                    'passenger_ids' => 'Only active, approved students can be added to a daily assignment.',
                 ]);
             }
         }

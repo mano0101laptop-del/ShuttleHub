@@ -35,12 +35,6 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('drv123'),
                 'role'     => 'driver',
             ],
-            [
-                'name'     => 'Scanner User',
-                'email'    => 'scan@tm.com',
-                'password' => Hash::make('scan123'),
-                'role'     => 'scanner',
-            ],
         ];
 
         foreach ($users as $userData) {

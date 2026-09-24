@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Route;
-use App\Models\RouteStop;
+use App\Models\Stop;
 use App\Models\Vehicle;
 use Illuminate\Support\Facades\DB;
 
@@ -12,7 +12,7 @@ class RouteController extends Controller
 {
     public function index()
     {
-        $routes = Route::with('vehicle.driver', 'passengers', 'routeStops')->latest()->paginate(15)->withQueryString();
+        $routes = Route::with('vehicle.driver', 'passengers', 'Stops')->latest()->paginate(15)->withQueryString();
         return view('routes.index', compact('routes'));
     }
 
@@ -45,7 +45,7 @@ class RouteController extends Controller
     public function edit(Route $tmsroute)
     {
         $vehicles = Vehicle::where('status', 'Active')->get();
-        $tmsroute->load('routeStops');
+        $tmsroute->load('Stops');
         return view('routes.edit', ['tmsroute' => $tmsroute, 'vehicles' => $vehicles]);
     }
 
@@ -102,7 +102,7 @@ class RouteController extends Controller
         $names = $request->input('stop_name', []);
         $etas  = $request->input('stop_eta', []);
 
-        $route->routeStops()->delete();
+        $route->Stops()->delete();
 
         $sequence = 1;
         foreach ($names as $i => $name) {
@@ -111,7 +111,7 @@ class RouteController extends Controller
                 continue;
             }
 
-            RouteStop::create([
+            Stop::create([
                 'route_id' => $route->id,
                 'name'     => $name,
                 'eta'      => trim((string) ($etas[$i] ?? '')) ?: null,
@@ -121,7 +121,7 @@ class RouteController extends Controller
 
         if ($sequence === 1) {
             // nothing valid was submitted — fall back to the route's "to" field
-            RouteStop::create([
+            Stop::create([
                 'route_id' => $route->id,
                 'name'     => $route->to,
                 'sequence' => 1,

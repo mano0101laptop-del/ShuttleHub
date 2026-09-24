@@ -6,7 +6,9 @@
   @include('partials.sidebar')
 
   <div class="main">
-    <x-topbar title="Complaints & Feedback" />
+    <x-topbar title="Complaints & Feedback">
+      {{-- Admin only receives and manages complaints/feedback submitted by passengers — admin does not create them. --}}
+    </x-topbar>
     <div class="content">
       @if(session('success'))
         <div class="alert-success">{{ session('success') }}</div>
@@ -16,7 +18,7 @@
         <div class="card-header"><h3>Submissions</h3></div>
         <div class="card-body">
           <table class="tbl">
-            <thead><tr><th>From</th><th>Type</th><th>Regarding</th><th>Subject / Message</th><th>Status</th><th>Response</th></tr></thead>
+            <thead><tr><th>From</th><th>Type</th><th>Regarding</th><th>Subject / Message</th><th>Status</th><th>Response</th><th>Actions</th></tr></thead>
             <tbody>
               @forelse($complaints as $c)
               <tr>
@@ -54,9 +56,16 @@
                     </div>
                   </form>
                 </td>
+                <td style="white-space:nowrap;">
+                  <a href="{{ route('complaints.edit', $c) }}" class="btn btn-S btn-sm" title="Edit"><i class="fas fa-pen"></i></a>
+                  <form method="POST" action="{{ route('complaints.destroy', $c) }}" style="display:inline;" onsubmit="return confirm('Remove this complaint / feedback record?')">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn btn-ERR btn-sm" title="Delete"><i class="fas fa-trash"></i></button>
+                  </form>
+                </td>
               </tr>
               @empty
-              <tr class="empty-row"><td colspan="6">No complaints or feedback submitted yet.</td></tr>
+              <tr class="empty-row"><td colspan="7">No complaints or feedback submitted yet.</td></tr>
               @endforelse
             </tbody>
           </table>

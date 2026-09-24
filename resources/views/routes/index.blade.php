@@ -7,7 +7,9 @@
 
   <div class="main">
     <x-topbar title="Routes">
-      <a href="{{ route('tmsroutes.create') }}" class="btn btn-P"><i class="fas fa-plus"></i> Add Route</a>
+      @if(Auth::user()->role === 'admin')
+        <a href="{{ route('tmsroutes.create') }}" class="btn btn-P"><i class="fas fa-plus"></i> Add Route</a>
+      @endif
     </x-topbar>
 
     <div class="content">
@@ -19,7 +21,12 @@
         <div class="card-body">
           <table class="tbl">
             <thead>
-              <tr><th>#</th><th>Name</th><th>From</th><th>To</th><th>Stops</th><th>Vehicle</th><th>Driver</th><th>Passengers</th><th>Status</th><th>Actions</th></tr>
+              <tr>
+                <th>#</th><th>Name</th><th>From</th><th>To</th><th>Stops</th><th>Vehicle</th><th>Driver</th><th>Passengers</th><th>Status</th>
+                @if(Auth::user()->role === 'admin')
+                  <th>Actions</th>
+                @endif
+              </tr>
             </thead>
             <tbody>
               @forelse($routes as $r)
@@ -28,10 +35,10 @@
                 <td>{{ $r->name }}</td>
                 <td>{{ $r->from }}</td>
                 <td>{{ $r->to }}</td>
-                <td title="{{ $r->routeStops->pluck('name')->implode(' → ') }}">
-                  {{ $r->routeStops->count() }}
-                  @if($r->routeStops->count())
-                    <span style="font-size:11px;color:var(--color-text-faint);display:block;">{{ $r->routeStops->pluck('name')->implode(' → ') }}</span>
+                <td title="{{ $r->Stops->pluck('name')->implode(' → ') }}">
+                  {{ $r->Stops->count() }}
+                  @if($r->Stops->count())
+                    <span style="font-size:11px;color:var(--color-text-faint);display:block;">{{ $r->Stops->pluck('name')->implode(' → ') }}</span>
                   @endif
                 </td>
                 <td>{{ $r->vehicle->number ?? '—' }}</td>
@@ -40,16 +47,18 @@
                 <td>
                   <span class="badge {{ $r->status=='Active' ? 'badge-G' : 'badge-ERR' }}">{{ $r->status }}</span>
                 </td>
+                @if(Auth::user()->role === 'admin')
                 <td>
-                  <a href="{{ route('tmsroutes.edit', $r) }}" class="btn btn-S btn-sm"><i class="fas fa-edit"></i></a>
-                  <form method="POST" action="{{ route('tmsroutes.destroy', $r) }}" style="display:inline" onsubmit="return confirm('Delete this route?')">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="btn btn-ERR btn-sm"><i class="fas fa-trash"></i></button>
-                  </form>
+                    <a href="{{ route('tmsroutes.edit', $r) }}" class="btn btn-S btn-sm"><i class="fas fa-edit"></i></a>
+                    <form method="POST" action="{{ route('tmsroutes.destroy', $r) }}" style="display:inline" onsubmit="return confirm('Delete this route?')">
+                      @csrf @method('DELETE')
+                      <button type="submit" class="btn btn-ERR btn-sm"><i class="fas fa-trash"></i></button>
+                    </form>
                 </td>
+                @endif
               </tr>
               @empty
-              <tr class="empty-row"><td colspan="10">No routes found. <a href="{{ route('tmsroutes.create') }}" style="color:var(--color-primary);">Add one →</a></td></tr>
+              <tr class="empty-row"><td colspan="{{ Auth::user()->role === 'admin' ? 10 : 9 }}">No routes found.@if(Auth::user()->role === 'admin') <a href="{{ route('tmsroutes.create') }}" style="color:var(--color-primary);">Add one →</a>@endif</td></tr>
               @endforelse
             </tbody>
           </table>

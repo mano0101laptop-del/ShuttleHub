@@ -36,7 +36,7 @@
             <div style="font-size:13px;color:rgba(255,255,255,.85);">License {{ $driver->license }} · {{ $driver->phone }}</div>
           </div>
           <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;">
-            <span class="badge" style="background:rgba(255,255,255,.2);color:#fff;padding:7px 12px;"><i class="fas fa-bus"></i> My Bus: {{ $todaysAssignment?->vehicle?->number ?? $driver->vehicle?->number ?? 'Not assigned' }}</span>
+            <span class="badge" style="background:rgba(255,255,255,.2);color:#fff;padding:7px 12px;"><i class="fas fa-bus"></i> My Bus: {{ $schedule?->vehicle?->number ?? $driver->vehicle?->number ?? 'Not assigned' }}</span>
             <span class="badge" style="background:rgba(255,255,255,.2);color:#fff;padding:7px 12px;"><i class="fas fa-circle-check"></i> {{ $driver->status }}</span>
           </div>
         </div>
@@ -54,28 +54,28 @@
 
         <div class="card mb-3">
           <div class="card-header" style="display:flex;align-items:center;gap:10px;">
-            <h3><i class="fas fa-calendar-day" style="color:var(--color-primary);margin-right:6px;"></i>Today's Assigned Trip</h3>
-            @if($todaysAssignment)<span class="badge {{ $todaysAssignment->status === 'Completed' ? 'badge-B' : ($todaysAssignment->status === 'Cancelled' ? 'badge-ERR' : 'badge-G') }}" style="margin-left:auto;">{{ $todaysAssignment->status }}</span>@endif
+            <h3><i class="fas fa-calendar-day" style="color:var(--color-primary);margin-right:6px;"></i>Active Schedule</h3>
+            @if($schedule)<span class="badge {{ $schedule->status === 'Completed' ? 'badge-B' : ($schedule->status === 'Cancelled' ? 'badge-ERR' : 'badge-G') }}" style="margin-left:auto;">{{ $schedule->status }}</span>@endif
           </div>
           <div class="card-body">
-            @if($todaysAssignment)
+            @if($schedule)
               <div style="display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:10px;margin-bottom:16px;">
-                <div class="tile"><div class="tile-lbl">Route</div><div class="tile-val"><i class="fas fa-route" style="color:var(--color-primary);margin-right:5px;"></i>{{ $todaysAssignment->route?->name ?? '—' }}</div></div>
-                <div class="tile"><div class="tile-lbl">My Bus</div><div class="tile-val"><i class="fas fa-bus" style="color:var(--color-primary);margin-right:5px;"></i>{{ $todaysAssignment->vehicle?->number ?? '—' }}</div></div>
-                <div class="tile"><div class="tile-lbl">Passengers</div><div class="tile-val">{{ $todaysAssignment->passengerAssignments->count() }}</div></div>
-                <div class="tile"><div class="tile-lbl">Departure</div><div class="tile-val">{{ $todaysAssignment->estimated_departure_time ?? '—' }}</div></div>
+                <div class="tile"><div class="tile-lbl">Route</div><div class="tile-val"><i class="fas fa-route" style="color:var(--color-primary);margin-right:5px;"></i>{{ $schedule->route?->name ?? '—' }}</div></div>
+                <div class="tile"><div class="tile-lbl">My Bus</div><div class="tile-val"><i class="fas fa-bus" style="color:var(--color-primary);margin-right:5px;"></i>{{ $schedule->vehicle?->number ?? '—' }}</div></div>
+                <div class="tile"><div class="tile-lbl">Passengers</div><div class="tile-val">{{ $schedule->passengerAssignments->count() }}</div></div>
+                <div class="tile"><div class="tile-lbl">Departure</div><div class="tile-val">{{ $schedule->estimated_departure_time ?? '—' }}</div></div>
               </div>
 
               <div style="display:grid;grid-template-columns:minmax(260px,.9fr) minmax(360px,1.4fr);gap:16px;">
                 <div style="border:1px solid var(--color-border);border-radius:12px;padding:14px;">
                   <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);margin-bottom:8px;">Stops & Timings</div>
-                  @forelse($todaysAssignment->stops->sortBy(fn($s) => $s->routeStop?->sequence ?? 999) as $row)
+                  @forelse($schedule->stops->sortBy(fn($s) => $s->Stop?->sequence ?? 999) as $row)
                     <div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;{{ !$loop->last ? 'border-bottom:1px solid var(--color-border);' : '' }}">
-                      <span style="font-size:13px;font-weight:600;"><i class="fas fa-location-dot" style="color:var(--color-primary);margin-right:5px;"></i>{{ $row->routeStop?->name ?? 'Stop' }}</span>
+                      <span style="font-size:13px;font-weight:600;"><i class="fas fa-location-dot" style="color:var(--color-primary);margin-right:5px;"></i>{{ $row->Stop?->name ?? 'Stop' }}</span>
                       <span style="font-size:11px;color:var(--color-text-muted);text-align:right;">Pickup {{ $row->pickup_time ?? $row->estimated_time ?? '—' }}<br>Drop {{ $row->dropoff_time ?? '—' }}</span>
                     </div>
                   @empty
-                    <div style="font-size:12px;color:var(--color-text-faint);">No stops were selected for today.</div>
+                    <div style="font-size:12px;color:var(--color-text-faint);">No stops are selected for this Schedule.</div>
                   @endforelse
                 </div>
 
@@ -84,45 +84,30 @@
                   <table class="tbl" style="min-width:560px;margin:0;">
                     <thead><tr><th>Passenger</th><th>Stop</th><th>Pickup</th><th>Drop-off</th></tr></thead>
                     <tbody>
-                      @forelse($todaysAssignment->passengerAssignments as $pa)
+                      @forelse($schedule->passengerAssignments as $pa)
                         <tr>
                           <td><strong>{{ $pa->passenger?->name ?? 'Removed passenger' }}</strong><div style="font-size:10px;color:var(--color-text-faint);">{{ $pa->passenger?->roll }}</div></td>
-                          <td>{{ $pa->routeStop?->name ?? $pa->passenger?->stop ?? '—' }}</td>
+                          <td>{{ $pa->Stop?->name ?? $pa->passenger?->stop ?? '—' }}</td>
                           <td>{{ $pa->pickup_time ?? '—' }}</td>
                           <td>{{ $pa->dropoff_time ?? '—' }}</td>
                         </tr>
                       @empty
-                        <tr class="empty-row"><td colspan="4">No passengers assigned today.</td></tr>
+                        <tr class="empty-row"><td colspan="4">No passengers are assigned to this Schedule.</td></tr>
                       @endforelse
                     </tbody>
                   </table>
                 </div>
               </div>
-              @if($todaysAssignment->notes)<div style="margin-top:12px;padding:10px 12px;background:rgba(124,58,237,.05);border-radius:10px;font-size:12px;color:var(--color-text-muted);"><i class="fas fa-note-sticky" style="color:var(--color-primary);margin-right:5px;"></i>{{ $todaysAssignment->notes }}</div>@endif
+              @if($schedule->notes)<div style="margin-top:12px;padding:10px 12px;background:rgba(124,58,237,.05);border-radius:10px;font-size:12px;color:var(--color-text-muted);"><i class="fas fa-note-sticky" style="color:var(--color-primary);margin-right:5px;"></i>{{ $schedule->notes }}</div>@endif
             @else
               <div style="text-align:center;padding:24px 10px;">
                 <i class="fas fa-calendar-xmark" style="font-size:30px;color:var(--color-text-faint);margin-bottom:10px;"></i>
-                <h3 style="margin-bottom:5px;">No Schedule available for today</h3>
-                <p style="font-size:12px;color:var(--color-text-muted);">Your normal My Bus / route details are shown below, but the transport office has not published a schedule for you today.</p>
+                <h3 style="margin-bottom:5px;">No Schedule assigned</h3>
+                <p style="font-size:12px;color:var(--color-text-muted);">Your normal bus / route details are shown below, but no persistent Schedule is currently assigned to you.</p>
               </div>
             @endif
           </div>
         </div>
-
-        @if($upcomingAssignments->count())
-          <div class="card mb-3">
-            <div class="card-header"><h3><i class="fas fa-calendar-week" style="color:var(--color-primary);margin-right:6px;"></i>Upcoming Schedule</h3></div>
-            <div class="card-body" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;">
-              @foreach($upcomingAssignments as $a)
-                <div class="tile">
-                  <div style="display:flex;justify-content:space-between;gap:8px;"><strong>{{ $a->date->format('D, d M') }}</strong><span class="badge badge-G">{{ $a->status }}</span></div>
-                  <div style="font-size:13px;margin-top:8px;"><i class="fas fa-route" style="color:var(--color-primary);margin-right:5px;"></i>{{ $a->route?->name ?? '—' }}</div>
-                  <div style="font-size:12px;color:var(--color-text-muted);margin-top:4px;"><i class="fas fa-bus" style="margin-right:5px;"></i>{{ $a->vehicle?->number ?? '—' }} · {{ $a->passengerAssignments->count() }} passengers</div>
-                </div>
-              @endforeach
-            </div>
-          </div>
-        @endif
 
         <div class="detail-grid--narrow">
           <div class="card">

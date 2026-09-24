@@ -17,6 +17,13 @@
       @if(session('error'))
         <div class="alert-err">{{ session('error') }}</div>
       @endif
+      @if($errors->any())
+        <div class="alert-err mb-3">
+          @foreach($errors->all() as $error)
+            <div><i class="fas fa-circle-exclamation"></i> {{ $error }}</div>
+          @endforeach
+        </div>
+      @endif
 
       @if(isset($announcements) && $announcements->count())
         <div class="card mb-3">
@@ -50,7 +57,7 @@
             </div>
             <h2 style="margin-bottom:8px;">Application Under Review</h2>
             <p style="color:var(--color-text-muted);max-width:440px;margin:0 auto 24px;line-height:1.6;">
-              Your transport application has been submitted successfully. The admin will review your request shortly. You will have full access to your pass, QR code, and fee details once approved.
+              Your transport application has been submitted successfully. The admin will review your request shortly. You will have full access to your pass and fee details once approved.
             </p>
             <span style="display:inline-block;background:var(--color-warning-soft);color:var(--color-warning);border:1px solid rgba(217,119,6,.3);border-radius:20px;padding:6px 20px;font-size:13px;font-weight:600;">
               <i class="fas fa-clock"></i> Pending Approval
@@ -68,12 +75,24 @@
                 <div class="tile-val">{{ $passenger->name }}</div>
               </div>
               <div class="tile">
-                <div class="tile-lbl">Registration #</div>
+                <div class="tile-lbl">College ID</div>
                 <div class="tile-val" style="font-family:monospace;">{{ $passenger->roll }}</div>
               </div>
               <div class="tile">
-                <div class="tile-lbl">Department</div>
-                <div class="tile-val">{{ $passenger->department }}</div>
+                <div class="tile-lbl">Passenger Type</div>
+                <div class="tile-val">{{ $passenger->passenger_type ?? '—' }}</div>
+              </div>
+              <div class="tile">
+                <div class="tile-lbl">Contact Number</div>
+                <div class="tile-val">{{ $passenger->contact_number ?? '—' }}</div>
+              </div>
+              <div class="tile">
+                <div class="tile-lbl">Emergency Contact</div>
+                <div class="tile-val">{{ $passenger->emergency_contact ?? '—' }}</div>
+              </div>
+              <div class="tile">
+                <div class="tile-lbl">Address</div>
+                <div class="tile-val">{{ $passenger->address ?? '—' }}</div>
               </div>
               <div class="tile">
                 <div class="tile-lbl">Preferred Stop</div>
@@ -103,73 +122,83 @@
 
         {{-- Welcome banner --}}
         <div style="background:var(--gradient-brand);border-radius:16px;padding:24px 28px;margin-bottom:20px;display:flex;align-items:center;gap:20px;box-shadow:var(--shadow-brand);">
-          <div style="width:60px;height:60px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <i class="fas fa-id-card" style="font-size:24px;color:#fff;"></i>
-          </div>
+          <form id="passenger-photo-form" method="POST" action="{{ route('passengers.updateOwnPhoto') }}" enctype="multipart/form-data" style="margin:0;flex-shrink:0;">
+            @csrf
+            <label for="passenger-photo-input" title="Change profile photo" style="width:66px;height:66px;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;cursor:pointer;box-shadow:0 4px 16px rgba(24,10,50,.15);">
+              @if($passenger->photo_path)
+                <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($passenger->photo_path) }}" alt="{{ $passenger->name }}" style="width:100%;height:100%;object-fit:cover;">
+              @else
+                <span style="font-size:22px;font-weight:800;color:#fff;">{{ strtoupper(substr($passenger->name,0,1)) }}</span>
+              @endif
+              <span style="position:absolute;right:1px;bottom:1px;width:20px;height:20px;border-radius:50%;background:#fff;color:var(--color-primary);display:flex;align-items:center;justify-content:center;font-size:9px;box-shadow:0 2px 6px rgba(0,0,0,.2);"><i class="fas fa-camera"></i></span>
+            </label>
+            <input id="passenger-photo-input" type="file" name="photo" accept="image/png,image/jpeg,image/webp" style="display:none;" onchange="document.getElementById('passenger-photo-form').submit()">
+          </form>
           <div>
             <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.75);margin-bottom:4px;">Transport Pass Active</div>
             <div style="font-size:22px;font-weight:800;color:#fff;">{{ $passenger->name }}</div>
-            <div style="font-size:13px;color:rgba(255,255,255,.85);">{{ $passenger->roll }} &nbsp;·&nbsp; {{ $passenger->department }}</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.85);">{{ $passenger->roll }} &nbsp;·&nbsp; {{ $passenger->passenger_type ?? $passenger->department ?? '—' }}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.7);margin-top:3px;"><i class="fas fa-camera"></i> Click your photo to replace it</div>
           </div>
           <div style="margin-left:auto;">
-            <span class="badge" style="font-size:12px;padding:6px 14px;background:rgba(255,255,255,.22);color:#fff;"><i class="fas fa-circle-check"></i> Approved</span>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+              <a href="{{ route('passengers.transport-card', $passenger) }}" class="btn" style="font-size:11px;padding:7px 11px;background:#fff;color:var(--color-primary);border:0;box-shadow:none;"><i class="fas fa-download"></i> Download Card</a>
+              <span class="badge" style="font-size:12px;padding:6px 14px;background:rgba(255,255,255,.22);color:#fff;"><i class="fas fa-circle-check"></i> Approved</span>
+            </div>
           </div>
         </div>
 
         {{-- Stats --}}
+        @php $dashActiveFee = $passenger->activeFeePayment(); @endphp
         <div class="stats-grid" style="margin-bottom:20px;">
-          <div class="stat-card">
-            <div class="stat-icon" style="background:var(--color-success-soft);color:var(--color-success);"><i class="fas fa-calendar-check"></i></div>
-            <div class="stat-info"><div class="stat-val">{{ $presentDays }}</div><div class="stat-lbl">Days Present</div></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background:var(--color-danger-soft);color:var(--color-danger);"><i class="fas fa-calendar-xmark"></i></div>
-            <div class="stat-info"><div class="stat-val">{{ $totalDays - $presentDays }}</div><div class="stat-lbl">Days Absent</div></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background:var(--color-primary-soft);color:var(--color-primary);"><i class="fas fa-percent"></i></div>
-            <div class="stat-info"><div class="stat-val">{{ $attendancePct }}%</div><div class="stat-lbl">Attendance Rate</div></div>
-          </div>
           <div class="stat-card">
             <div class="stat-icon" style="background:var(--color-warning-soft);color:var(--color-warning);"><i class="fas fa-route"></i></div>
             <div class="stat-info"><div class="stat-val">{{ $passenger->route->name ?? '—' }}</div><div class="stat-lbl">My Route</div></div>
           </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:var(--color-primary-soft);color:var(--color-primary);"><i class="fas fa-map-pin"></i></div>
+            <div class="stat-info"><div class="stat-val">{{ $passenger->stop ?? '—' }}</div><div class="stat-lbl">My Stop</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:{{ $dashActiveFee ? 'var(--color-success-soft)' : 'var(--color-danger-soft)' }};color:{{ $dashActiveFee ? 'var(--color-success)' : 'var(--color-danger)' }};"><i class="fas fa-receipt"></i></div>
+            <div class="stat-info"><div class="stat-val" style="font-size:15px;">{{ $dashActiveFee ? 'Active' : 'Due' }}</div><div class="stat-lbl">Fee Status</div></div>
+          </div>
         </div>
 
-        {{-- Today's Assignment — day-specific driver/vehicle/timing, if the Incharge has set one --}}
+        {{-- Persistent Schedule — remains active until Admin/Incharge updates it --}}
         <div class="card mb-3">
-          <div class="card-header"><h3><i class="fas fa-calendar-day" style="color:var(--color-warning);margin-right:6px;"></i>Today's Trip</h3></div>
+          <div class="card-header"><h3><i class="fas fa-calendar-day" style="color:var(--color-warning);margin-right:6px;"></i>My Schedule</h3></div>
           <div class="card-body">
-            @if($todaysAssignment)
+            @if($schedule)
               <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;">
                 <div class="tile" style="flex:1;min-width:140px;">
-                  <div class="tile-lbl">Driver Today</div>
-                  <div class="tile-val">{{ $todaysAssignment->driver?->name ?? $passenger->route->vehicle?->driver?->name ?? '—' }}</div>
+                  <div class="tile-lbl">Scheduled Driver</div>
+                  <div class="tile-val">{{ $schedule->driver?->name ?? $passenger->route->vehicle?->driver?->name ?? '—' }}</div>
                 </div>
                 <div class="tile" style="flex:1;min-width:140px;">
-                  <div class="tile-lbl">Vehicle Today</div>
-                  <div class="tile-val">{{ $todaysAssignment->vehicle?->number ?? $passenger->route->vehicle?->number ?? '—' }}</div>
+                  <div class="tile-lbl">Scheduled Vehicle</div>
+                  <div class="tile-val">{{ $schedule->vehicle?->number ?? $passenger->route->vehicle?->number ?? '—' }}</div>
                 </div>
                 <div class="tile" style="flex:1;min-width:140px;">
                   <div class="tile-lbl">Departure</div>
-                  <div class="tile-val">{{ $todaysAssignment->estimated_departure_time ?? '—' }}</div>
+                  <div class="tile-val">{{ $schedule->estimated_departure_time ?? '—' }}</div>
                 </div>
               </div>
               @php
-                $myStopRow = $todaysAssignment->stopsWithTimes()->first(fn($row) => $row['stop']->name === $passenger->stop);
-                $myStopTimeToday = $myStopRow['time'] ?? null;
+                $myStopRow = $schedule->stopsWithTimes()->first(fn($row) => $row['stop']->name === $passenger->stop);
+                $myStopTime = $myStopRow['time'] ?? null;
               @endphp
-              @if($myStopTimeToday)
+              @if($myStopTime)
                 <div class="tile" style="margin-bottom:10px;">
-                  <div class="tile-lbl">ETA at My Stop Today</div>
-                  <div class="tile-val"><i class="fas fa-clock" style="color:var(--color-warning);"></i> {{ $myStopTimeToday }}</div>
+                  <div class="tile-lbl">ETA at My Stop</div>
+                  <div class="tile-val"><i class="fas fa-clock" style="color:var(--color-warning);"></i> {{ $myStopTime }}</div>
                 </div>
               @endif
-              @if($todaysAssignment->route->routeStops->count())
+              @if($schedule->route->Stops->count())
                 <div class="tile" style="margin-bottom:10px;">
-                  <div class="tile-lbl">All Stop Timings Today</div>
+                  <div class="tile-lbl">All Stop Timings</div>
                   <div class="tile-val" style="font-size:13px;display:flex;flex-direction:column;gap:4px;margin-top:4px;">
-                    @foreach($todaysAssignment->stopsWithTimes() as $row)
+                    @foreach($schedule->stopsWithTimes() as $row)
                       <div style="display:flex;justify-content:space-between;gap:10px;max-width:420px;">
                         <span><i class="fas fa-map-pin" style="color:var(--color-primary);font-size:11px;margin-right:4px;"></i>{{ $row['stop']->name }}</span>
                         <span style="color:var(--color-text-muted);font-size:12px;">{{ $row['time'] ?? '—' }}</span>
@@ -178,45 +207,29 @@
                   </div>
                 </div>
               @endif
-              @if($todaysAssignment->notes)
+              @if($schedule->notes)
                 <div class="tile" style="margin-bottom:10px;">
                   <div class="tile-lbl">Notes from Transport Office</div>
-                  <div class="tile-val" style="font-size:13px;">{{ $todaysAssignment->notes }}</div>
+                  <div class="tile-val" style="font-size:13px;">{{ $schedule->notes }}</div>
                 </div>
               @endif
-              <span class="badge {{ $todaysAssignment->status=='Scheduled' ? 'badge-G' : ($todaysAssignment->status=='Completed' ? 'badge-B' : 'badge-ERR') }}">{{ $todaysAssignment->status }}</span>
+              <span class="badge {{ $schedule->status=='Scheduled' ? 'badge-G' : ($schedule->status=='Completed' ? 'badge-B' : 'badge-ERR') }}">{{ $schedule->status }}</span>
             @else
-              <p style="font-size:12px;color:var(--color-text-faint);">No special update for today — your route is running its usual schedule.</p>
+              <p style="font-size:12px;color:var(--color-text-faint);">No custom Schedule is set for your route — your normal route details remain in effect.</p>
             @endif
           </div>
         </div>
 
         <div class="detail-grid--narrow">
 
-          {{-- QR Card --}}
+          {{-- My Transport --}}
           <div class="card" style="text-align:center;padding:0;overflow:hidden;">
             <div style="background:var(--gradient-brand);padding:16px 16px 12px;">
-              <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.75);margin-bottom:4px;">My Transport QR</div>
+              <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.75);margin-bottom:4px;">My Transport</div>
               <div style="font-size:16px;font-weight:700;color:#fff;">{{ $passenger->name }}</div>
               <div style="font-size:12px;color:rgba(255,255,255,.85);">{{ $passenger->roll }}</div>
             </div>
-            @if($passenger->qrIsActive())
-              <div style="padding:20px 16px 12px;">
-                <div style="background:#fff;border-radius:12px;padding:12px;display:inline-block;box-shadow:var(--shadow-md);border:1px solid var(--color-border);">
-                  <div id="qrcode"></div>
-                </div>
-                <div style="font-size:10px;color:var(--color-text-faint);margin-top:8px;font-family:monospace;">{{ $passenger->qr_token }}</div>
-                <div style="font-size:11px;color:var(--color-text-faint);margin-top:2px;">Scan to mark attendance</div>
-              </div>
-            @else
-              <div style="padding:32px 16px;">
-                <i class="fas fa-lock" style="font-size:24px;color:var(--color-text-faint);"></i>
-                <div style="font-size:12px;color:var(--color-text-muted);margin-top:10px;max-width:220px;margin-inline:auto;">
-                  Your QR unlocks once your transport fee is paid and approved.
-                </div>
-              </div>
-            @endif
-            <div style="border-top:1px solid var(--color-border);padding:12px 16px;text-align:left;">
+            <div style="border-top:1px solid var(--color-border);padding:16px 16px 12px;text-align:left;">
               <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
                 <span style="font-size:12px;color:var(--color-text-muted);">Route</span>
                 <span style="font-size:12px;color:var(--color-text);font-weight:600;">{{ $passenger->route->name ?? '—' }}</span>
@@ -233,18 +246,18 @@
                 <span style="font-size:12px;color:var(--color-text-muted);">Driver</span>
                 <span style="font-size:12px;color:var(--color-text);font-weight:600;">{{ $passenger->route->vehicle->driver->name ?? '—' }}</span>
               </div>
-              @php $myStopEta = $passenger->route?->routeStops->firstWhere('name', $passenger->stop)?->eta; @endphp
+              @php $myStopEta = $passenger->route?->Stops->firstWhere('name', $passenger->stop)?->eta; @endphp
               @if($myStopEta)
               <div style="display:flex;justify-content:space-between;margin-top:6px;">
                 <span style="font-size:12px;color:var(--color-text-muted);">ETA at My Stop</span>
                 <span style="font-size:12px;color:var(--color-text);font-weight:600;"><i class="fas fa-clock" style="color:var(--color-warning);"></i> {{ $myStopEta }}</span>
               </div>
               @endif
-              @if($passenger->route && $passenger->route->routeStops->count())
+              @if($passenger->route && $passenger->route->Stops->count())
               <div style="margin-top:8px;">
                 <span style="font-size:12px;color:var(--color-text-muted);">Route Stops</span>
                 <div style="font-size:12px;color:var(--color-text);font-weight:600;margin-top:4px;display:flex;flex-direction:column;gap:3px;">
-                  @foreach($passenger->route->routeStops as $stop)
+                  @foreach($passenger->route->Stops as $stop)
                     <div style="display:flex;justify-content:space-between;gap:10px;">
                       <span>{{ $stop->name }}</span>
                       <span style="color:var(--color-text-muted);font-weight:400;">{{ $stop->eta ?? '—' }}</span>
@@ -254,16 +267,13 @@
               </div>
               @endif
             </div>
-            @if($passenger->qrIsActive())
-              <div style="border-top:1px solid var(--color-border);padding:12px 16px;">
-                <a href="{{ route('passengers.qr', $passenger) }}" class="btn btn-P" style="width:100%;justify-content:center;font-size:12px;" target="_blank">
-                  <i class="fas fa-download"></i> Download QR Pass
-                </a>
-              </div>
-            @endif
+            <div style="border-top:1px solid var(--color-border);padding:12px 16px;display:flex;gap:8px;">
+              <a href="{{ route('passengers.show', $passenger) }}" class="btn btn-S" style="flex:1;justify-content:center;font-size:11px;"><i class="fas fa-user"></i> My Profile</a>
+              <a href="{{ route('passengers.transport-card', $passenger) }}" class="btn btn-P" style="flex:1;justify-content:center;font-size:11px;"><i class="fas fa-id-card"></i> Digital Card</a>
+            </div>
           </div>
 
-          {{-- Right: Details + Fees + Attendance --}}
+          {{-- Right: Details + Fees --}}
           <div style="display:flex;flex-direction:column;gap:16px;">
 
             {{-- My Details --}}
@@ -276,12 +286,24 @@
                     <div class="tile-val">{{ $passenger->name }}</div>
                   </div>
                   <div class="tile">
-                    <div class="tile-lbl">Roll / Reg #</div>
+                    <div class="tile-lbl">College ID</div>
                     <div class="tile-val" style="font-family:monospace;">{{ $passenger->roll }}</div>
                   </div>
                   <div class="tile">
-                    <div class="tile-lbl">Department</div>
-                    <div class="tile-val">{{ $passenger->department }}</div>
+                    <div class="tile-lbl">Passenger Type</div>
+                    <div class="tile-val">{{ $passenger->passenger_type ?? '—' }}</div>
+                  </div>
+                  <div class="tile">
+                    <div class="tile-lbl">Contact Number</div>
+                    <div class="tile-val">{{ $passenger->contact_number ?? '—' }}</div>
+                  </div>
+                  <div class="tile">
+                    <div class="tile-lbl">Emergency Contact</div>
+                    <div class="tile-val">{{ $passenger->emergency_contact ?? '—' }}</div>
+                  </div>
+                  <div class="tile">
+                    <div class="tile-lbl">Address</div>
+                    <div class="tile-val">{{ $passenger->address ?? '—' }}</div>
                   </div>
                   <div class="tile">
                     <div class="tile-lbl">Status</div>
@@ -290,14 +312,6 @@
                   <div class="tile">
                     <div class="tile-lbl">Stop</div>
                     <div class="tile-val">{{ $passenger->stop ?? '—' }}</div>
-                  </div>
-                  <div class="tile">
-                    <div class="tile-lbl">Security PIN</div>
-                    @if($passenger->fingerprint_enrolled)
-                      <span style="color:var(--color-success);font-size:13px;font-weight:600;"><i class="fas fa-fingerprint"></i> Enrolled</span>
-                    @else
-                      <span style="color:var(--color-text-faint);font-size:13px;"><i class="fas fa-fingerprint"></i> Not enrolled</span>
-                    @endif
                   </div>
                 </div>
               </div>
@@ -311,7 +325,7 @@
                 @if($activeFee)
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                     <span style="font-size:13px;color:var(--color-text-muted);">Transport fee for {{ $activeFee->monthLabel() }}</span>
-                    <span class="badge badge-G"><i class="fas fa-circle-check"></i> Active until {{ $activeFee->qr_expires_at->format('d M') }}</span>
+                    <span class="badge badge-G"><i class="fas fa-circle-check"></i> Active until {{ $activeFee->valid_until->format('d M') }}</span>
                   </div>
                 @elseif($pendingFee)
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -327,43 +341,6 @@
                 <a href="{{ route('fee.my') }}" class="btn btn-P" style="width:100%;justify-content:center;font-size:12px;">
                   <i class="fas fa-money-bill-wave"></i> {{ $activeFee ? 'View My Fee Pass' : 'Pay Transport Fee' }}
                 </a>
-              </div>
-            </div>
-
-            {{-- Attendance History --}}
-            <div class="card">
-              <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
-                <h3><i class="fas fa-calendar" style="color:var(--color-success);margin-right:6px;"></i>Attendance History</h3>
-                <span style="font-size:12px;color:var(--color-text-faint);">Last 30 records</span>
-              </div>
-              <div class="card-body">
-                <table class="tbl">
-                  <thead>
-                    <tr><th>Date</th><th>Time</th><th>Method</th><th>Status</th></tr>
-                  </thead>
-                  <tbody>
-                    @forelse($passenger->attendances()->latest('date')->take(30)->get() as $a)
-                    <tr>
-                      <td>{{ $a->date->format('d M Y') }}</td>
-                      <td>{{ $a->time ? \Carbon\Carbon::parse($a->time)->format('h:i A') : '—' }}</td>
-                      <td>
-                        @if($a->method === 'qr')
-                          <span style="color:var(--color-primary);font-size:11px;"><i class="fas fa-qrcode"></i> QR Scan</span>
-                        @elseif($a->method === 'fingerprint')
-                          <span style="color:var(--color-success);font-size:11px;"><i class="fas fa-fingerprint"></i> Security PIN</span>
-                        @else
-                          <span style="color:var(--color-text-muted);font-size:11px;"><i class="fas fa-keyboard"></i> Manual</span>
-                        @endif
-                      </td>
-                      <td>
-                        <span class="badge {{ $a->status=='Present' ? 'badge-G' : 'badge-ERR' }}">{{ $a->status }}</span>
-                      </td>
-                    </tr>
-                    @empty
-                    <tr><td colspan="4" style="text-align:center;color:var(--color-text-faint);">No attendance records yet.</td></tr>
-                    @endforelse
-                  </tbody>
-                </table>
               </div>
             </div>
 
@@ -404,19 +381,6 @@
           </div>
         </div>
 
-        @if($passenger->qrIsActive())
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-        <script>
-          new QRCode(document.getElementById("qrcode"), {
-            text: "{{ route('attendance.scan', ['token' => $passenger->qr_token]) }}",
-            width: 160,
-            height: 160,
-            colorDark: "#1E1B2E",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-          });
-        </script>
-        @endif
       @endif
 
     </div>

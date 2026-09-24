@@ -37,8 +37,8 @@ class RouteSeeder extends Seeder
 
             // Seed a couple of demo stops so the multi-stop feature has
             // something to show out of the box, if this route has none yet.
-            if ($r->routeStops()->count() === 0) {
-                $r->routeStops()->createMany([
+            if ($r->Stops()->count() === 0) {
+                $r->Stops()->createMany([
                     ['name' => $route['from'] . ' Pickup Point', 'sequence' => 1],
                     ['name' => 'Mid Route Stop',                 'sequence' => 2],
                     ['name' => $route['to'],                     'sequence' => 3],

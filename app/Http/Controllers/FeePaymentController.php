@@ -52,7 +52,7 @@ class FeePaymentController extends Controller
                 $status = match (true) {
                     $payment->status === 'pending'  => 'pending',
                     $payment->status === 'rejected' => 'due',
-                    $payment->status === 'approved' && $payment->qr_expires_at && $payment->qr_expires_at->toDateString() >= $todayStr => 'active',
+                    $payment->status === 'approved' && $payment->valid_until && $payment->valid_until->toDateString() >= $todayStr => 'active',
                     default => 'expired',
                 };
             } else {
@@ -84,34 +84,50 @@ class FeePaymentController extends Controller
     // Update the monthly fee amount
     public function updateSettings(Request $request)
     {
-        $request->validate([
-            'monthly_fee' => 'required|numeric|min:0|max:999999',
+        $validated = $request->validate([
+            'monthly_fee'      => 'required|numeric|min:0|max:999999',
+            'jazzcash_number'  => 'sometimes|nullable|string|max:50',
+            'easypaisa_number' => 'sometimes|nullable|string|max:50',
         ]);
 
         $setting = FeeSetting::current();
-        $setting->update([
-            'monthly_fee' => $request->monthly_fee,
+        $updates = [
+            'monthly_fee' => $validated['monthly_fee'],
             'updated_by'  => Auth::id(),
-        ]);
+        ];
 
-        return redirect()->back()->with('success', 'Transport fee amount updated to Rs. ' . number_format($request->monthly_fee, 2) . '.');
+        // Preserve previously configured wallet details when an older client
+        // submits only the monthly fee. Empty fields from the Admin form still
+        // intentionally clear the corresponding number.
+        if ($request->exists('jazzcash_number')) {
+            $updates['jazzcash_number'] = filled($validated['jazzcash_number'] ?? null)
+                ? trim($validated['jazzcash_number'])
+                : null;
+        }
+        if ($request->exists('easypaisa_number')) {
+            $updates['easypaisa_number'] = filled($validated['easypaisa_number'] ?? null)
+                ? trim($validated['easypaisa_number'])
+                : null;
+        }
+
+        $setting->update($updates);
+
+        return redirect()->back()->with('success', 'Transport fee and payment details updated.');
     }
 
-    // Approve a fee payment — extends the passenger's pass validity through the paid
-    // month. There is no separate fee QR: this simply unlocks the passenger's single
-    // transport QR (see Passenger::qrIsActive()).
+    // Approve a fee payment — extends the passenger's pass validity through the paid month.
     public function approve(FeePayment $feePayment)
     {
         $feePayment->update([
             'status'            => 'approved',
-            'qr_expires_at'     => Carbon::createFromFormat('Y-m', $feePayment->month)->endOfMonth(),
+            'valid_until'       => Carbon::createFromFormat('Y-m', $feePayment->month)->endOfMonth(),
             'approved_by'       => Auth::id(),
             'approved_at'       => now(),
             'rejection_reason'  => null,
         ]);
 
         return redirect()->back()->with('success',
-            "{$feePayment->passenger->name}'s payment for {$feePayment->monthLabel()} has been approved. Their transport QR pass is now active.");
+            "{$feePayment->passenger->name}'s payment for {$feePayment->monthLabel()} has been approved. Their transport pass is now active.");
     }
 
     // Reject a fee payment (also revokes the validity window it would have granted)
@@ -124,7 +140,7 @@ class FeePaymentController extends Controller
         $feePayment->update([
             'status'            => 'rejected',
             'rejection_reason'  => $request->rejection_reason,
-            'qr_expires_at'     => null,
+            'valid_until'       => null,
         ]);
 
         return redirect()->back()->with('success',
@@ -154,12 +170,13 @@ class FeePaymentController extends Controller
         $canPay     = !$pending;
         $targetMonth = $this->nextPayableMonth($passenger);
 
-        $amount = FeeSetting::amount();
+        $setting = FeeSetting::current();
+        $amount = (float) $setting->monthly_fee;
 
         $stripe = new StripeClient(config('services.stripe.secret'));
 
         return view('fee-payments.my', compact(
-            'passenger', 'active', 'pending', 'history', 'canPay', 'targetMonth', 'amount'
+            'passenger', 'active', 'pending', 'history', 'canPay', 'targetMonth', 'amount', 'setting'
         ))->with('stripeEnabled', $stripe->isConfigured())
           ->with('stripeCurrency', strtoupper(config('services.stripe.currency')));
     }
@@ -178,10 +195,20 @@ class FeePaymentController extends Controller
             return back()->with('error', 'You already have a payment awaiting review. Please wait for the admin to approve or reject it before submitting another.');
         }
 
-        $request->validate([
-            'tid'        => 'required|string|max:100',
-            'screenshot' => 'required|image|mimes:jpg,jpeg,png,webp|max:4096',
+        $validated = $request->validate([
+            'payment_method' => 'nullable|string|in:manual,jazzcash,easypaisa',
+            'tid'            => 'required|string|max:100',
+            'screenshot'     => 'required|image|mimes:jpg,jpeg,png,webp|max:4096',
         ]);
+        $paymentMethod = $validated['payment_method'] ?? 'manual';
+
+        $setting = FeeSetting::current();
+        if ($paymentMethod === 'jazzcash' && blank($setting->jazzcash_number)) {
+            return back()->withInput()->with('error', 'JazzCash is not configured right now. Please choose another payment option.');
+        }
+        if ($paymentMethod === 'easypaisa' && blank($setting->easypaisa_number)) {
+            return back()->withInput()->with('error', 'Easypaisa is not configured right now. Please choose another payment option.');
+        }
 
         $month = $this->nextPayableMonth($passenger);
         // Bank transaction screenshots are sensitive — private disk only,
@@ -192,14 +219,14 @@ class FeePaymentController extends Controller
             'passenger_id'     => $passenger->id,
             'month'            => $month,
             'amount'           => FeeSetting::amount(),
-            'tid'              => $request->tid,
+            'tid'              => $validated['tid'],
             'screenshot_path'  => $path,
             'status'           => 'pending',
-            'payment_method'   => 'manual',
+            'payment_method'   => $paymentMethod,
         ]);
 
         return redirect()->route('fee.my')->with('success',
-            'Your payment has been submitted for review. You will be able to see your QR pass here once the admin approves it.');
+            'Your payment has been submitted for review. You will be able to see your active pass here once the admin approves it.');
     }
 
     // ── Stream a fee-payment screenshot from the private disk ──
@@ -313,12 +340,12 @@ class FeePaymentController extends Controller
         $payment->update([
             'status'                     => 'approved',
             'stripe_payment_intent_id'   => $session['payment_intent'] ?? null,
-            'qr_expires_at'              => Carbon::createFromFormat('Y-m', $payment->month)->endOfMonth(),
+            'valid_until'                => Carbon::createFromFormat('Y-m', $payment->month)->endOfMonth(),
             'approved_at'                => now(),
         ]);
 
         return redirect()->route('fee.my')->with('success',
-            'Payment successful! Your transport QR pass is now active for ' . $payment->monthLabel() . '.');
+            'Payment successful! Your transport pass is now active for ' . $payment->monthLabel() . '.');
     }
 
     // Stripe redirects here if the passenger cancels/abandons checkout

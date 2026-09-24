@@ -22,27 +22,40 @@
         <div class="card-header"><h3><i class="fas fa-sliders" style="color:var(--color-primary);margin-right:6px;"></i>Fee Settings</h3></div>
         <div class="card-body">
           @if(Auth::user()->isAdmin())
-            <span style="font-size:13px;">
-              Current fee: <strong>Rs. {{ number_format($setting->monthly_fee, 2) }}</strong>
-              @if($setting->updated_by) &middot; last updated by {{ optional($setting->updatedBy)->name ?? '—' }} @endif
-            </span>
-          @else
           <form method="POST" action="{{ route('fee-payments.settings') }}" style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;">
             @csrf @method('PUT')
             <div class="lf-group" style="margin-bottom:0;min-width:220px;">
               <label class="lf-label">Monthly Transport Fee (Rs.) *</label>
               <div class="lf-input-wrap">
                 <i class="fas fa-money-bill"></i>
-                <input class="lf-input" type="number" step="0.01" min="0" name="monthly_fee"
-                       value="{{ old('monthly_fee', $setting->monthly_fee) }}" required>
+                <input class="lf-input" type="number" step="0.01" min="0" name="monthly_fee" value="{{ old('monthly_fee', $setting->monthly_fee) }}" required>
               </div>
             </div>
-            <button type="submit" class="btn btn-P"><i class="fas fa-save"></i> Update Fee</button>
-            <span style="font-size:12px;color:var(--color-text-faint);">
-              Current fee: <strong>Rs. {{ number_format($setting->monthly_fee, 2) }}</strong>
-              @if($setting->updated_by) &middot; last updated by {{ optional($setting->updatedBy)->name ?? '—' }} @endif
-            </span>
+            <div class="lf-group" style="margin-bottom:0;min-width:220px;">
+              <label class="lf-label">JazzCash Number</label>
+              <div class="lf-input-wrap">
+                <i class="fas fa-mobile-screen"></i>
+                <input class="lf-input" type="text" name="jazzcash_number" value="{{ old('jazzcash_number', $setting->jazzcash_number) }}" placeholder="e.g. 03XXXXXXXXX">
+              </div>
+            </div>
+            <div class="lf-group" style="margin-bottom:0;min-width:220px;">
+              <label class="lf-label">Easypaisa Number</label>
+              <div class="lf-input-wrap">
+                <i class="fas fa-mobile-screen-button"></i>
+                <input class="lf-input" type="text" name="easypaisa_number" value="{{ old('easypaisa_number', $setting->easypaisa_number) }}" placeholder="e.g. 03XXXXXXXXX">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-P"><i class="fas fa-save"></i> Update Payment Details</button>
           </form>
+          <div style="font-size:12px;color:var(--color-text-faint);margin-top:10px;">
+            Current fee: <strong>Rs. {{ number_format($setting->monthly_fee, 2) }}</strong>
+            @if($setting->updated_by) &middot; last updated by {{ optional($setting->updatedBy)->name ?? '—' }} @endif
+          </div>
+          @else
+            <div style="font-size:13px;color:var(--color-text-muted);">
+              Current fee: <strong>Rs. {{ number_format($setting->monthly_fee, 2) }}</strong>
+              &middot; Payment settings are managed by Admin.
+            </div>
           @endif
         </div>
       </div>
@@ -57,7 +70,11 @@
         <div class="card-body">
           <table class="tbl">
             <thead>
-              <tr><th>#</th><th>Passenger</th><th>Month</th><th>Amount</th><th>TID</th><th>Screenshot</th><th>Submitted</th><th>Actions</th></tr>
+              <tr><th>#</th><th>Passenger</th><th>Month</th><th>Amount</th><th>TID</th><th>Screenshot</th><th>Submitted</th>
+                @if(Auth::user()->isIncharge())
+                  <th>Actions</th>
+                @endif
+              </tr>
             </thead>
             <tbody>
               @foreach($pendingPayments as $fp)
@@ -72,6 +89,10 @@
                 <td style="font-family:var(--font-mono);font-size:11px;">
                   @if($fp->payment_method === 'stripe')
                     <span class="badge badge-B" style="font-family:inherit;">Card (Stripe)</span>
+                  @elseif($fp->payment_method === 'jazzcash')
+                    <span class="badge badge-B" style="font-family:inherit;">JazzCash</span><br>{{ $fp->tid }}
+                  @elseif($fp->payment_method === 'easypaisa')
+                    <span class="badge badge-G" style="font-family:inherit;">Easypaisa</span><br>{{ $fp->tid }}
                   @else
                     {{ $fp->tid }}
                   @endif
@@ -86,10 +107,8 @@
                   @endif
                 </td>
                 <td style="font-size:12px;color:var(--color-text-faint);">{{ $fp->created_at->format('d M Y, h:i A') }}</td>
+                @if(Auth::user()->isIncharge())
                 <td style="white-space:nowrap;">
-                  @if(Auth::user()->isAdmin())
-                    <span style="color:var(--color-text-faint);font-size:12px;">View only</span>
-                  @else
                   <form method="POST" action="{{ route('fee-payments.approve', $fp) }}" style="display:inline;">
                     @csrf
                     <button type="submit" class="btn btn-G btn-sm" title="Approve Payment">
@@ -104,8 +123,8 @@
                     <input type="text" name="rejection_reason" placeholder="Reason (optional)" class="lf-input" style="height:32px;font-size:12px;">
                     <button type="submit" class="btn btn-ERR btn-sm">Confirm</button>
                   </form>
-                  @endif
                 </td>
+                @endif
               </tr>
               @endforeach
             </tbody>
@@ -169,7 +188,7 @@
                 </td>
                 <td>{{ $r['payment'] ? 'Rs. ' . number_format($r['payment']->amount, 2) : '—' }}</td>
                 <td style="font-size:12px;color:var(--color-text-faint);">
-                  {{ $r['payment'] && $r['payment']->qr_expires_at ? $r['payment']->qr_expires_at->format('d M Y') : '—' }}
+                  {{ $r['payment'] && $r['payment']->valid_until ? $r['payment']->valid_until->format('d M Y') : '—' }}
                 </td>
                 <td>
                   <a href="{{ route('passengers.show', $r['passenger']) }}" class="btn btn-S btn-sm" title="View Passenger"><i class="fas fa-id-card"></i></a>

@@ -45,7 +45,7 @@
         @endif
 
         <!-- Bacha card status dekhne ke baad automatically wapis tablet scanning page par jaye -->
-        <a href="{{ route('scanner.index') }}" class="btn-back">Scan Next Passenger</a>
+        <a href="{{ route('attendance.tabletView') }}" class="btn-back">Scan Next Passenger</a>
     </div>
 
 </body>

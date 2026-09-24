@@ -7,7 +7,9 @@
 
   <div class="main">
     <x-topbar title="Passengers">
-      <a href="{{ route('passengers.create') }}" class="btn btn-P"><i class="fas fa-user-plus"></i> Register Passenger</a>
+      @if(Auth::user()->role === 'admin')
+        <a href="{{ route('passengers.create') }}" class="btn btn-P"><i class="fas fa-user-plus"></i> Register Passenger</a>
+      @endif
     </x-topbar>
 
     <div class="content">
@@ -15,8 +17,8 @@
         <div class="alert-success">{{ session('success') }}</div>
       @endif
 
-      {{-- ── Pending Transport Requests ── --}}
-      @if($pendingPassengers->count())
+      {{-- ── Pending Transport Requests (Admin only) ── --}}
+      @if(Auth::user()->role === 'admin' && $pendingPassengers->count())
       <div class="card mb-3" style="border-color:rgba(217,119,6,.3);">
         <div class="card-header" style="background:rgba(217,119,6,.08);">
           <h3 style="color:var(--color-warning);"><i class="fas fa-hourglass-half" style="margin-right:6px;"></i>Pending Transport Applications</h3>
@@ -25,7 +27,7 @@
         <div class="card-body">
           <table class="tbl">
             <thead>
-              <tr><th>#</th><th>Name</th><th>Roll No</th><th>Department</th><th>Stop</th><th>Applied</th><th>Actions</th></tr>
+              <tr><th>#</th><th>Name</th><th>College ID</th><th>Type</th><th>Stop</th><th>Applied</th><th>Actions</th></tr>
             </thead>
             <tbody>
               @foreach($pendingPassengers as $p)
@@ -33,7 +35,7 @@
                 <td>{{ $loop->iteration }}</td>
                 <td style="font-weight:600;color:var(--color-text);">{{ $p->name }}</td>
                 <td style="font-family:var(--font-mono);font-size:11px;">{{ $p->roll }}</td>
-                <td>{{ $p->department }}</td>
+                <td>{{ $p->passenger_type ?? '—' }}</td>
                 <td>{{ $p->stop ?? '—' }}</td>
                 <td style="font-size:12px;color:var(--color-text-faint);">{{ $p->created_at->format('d M Y') }}</td>
                 <td style="white-space:nowrap;">
@@ -59,8 +61,8 @@
       </div>
       @endif
 
-      {{-- ── Cancellation Requests ── --}}
-      @if($cancellationRequests->count())
+      {{-- ── Cancellation Requests (Admin only) ── --}}
+      @if(Auth::user()->role === 'admin' && $cancellationRequests->count())
       <div class="card mb-3" style="border-color:rgba(220,38,38,.3);">
         <div class="card-header" style="background:rgba(220,38,38,.06);">
           <h3 style="color:var(--color-danger);"><i class="fas fa-ban" style="margin-right:6px;"></i>Cancellation Requests</h3>
@@ -68,7 +70,7 @@
         </div>
         <div class="card-body">
           <table class="tbl">
-            <thead><tr><th>#</th><th>Name</th><th>Roll No</th><th>Reason</th><th>Requested</th><th>Actions</th></tr></thead>
+            <thead><tr><th>#</th><th>Name</th><th>College ID</th><th>Reason</th><th>Requested</th><th>Actions</th></tr></thead>
             <tbody>
               @foreach($cancellationRequests as $p)
               <tr>
@@ -99,15 +101,11 @@
       <div class="card">
         <div class="card-header">
           <h3>Passengers</h3>
-          <div style="display:flex;gap:12px;font-size:11px;color:var(--color-text-faint);">
-            <span><i class="fas fa-qrcode" style="color:var(--color-primary);"></i> QR Issued</span>
-            <span><i class="fas fa-fingerprint" style="color:var(--color-success);"></i> Security PIN Set</span>
-          </div>
         </div>
         <div class="card-body">
           <table class="tbl">
             <thead>
-              <tr><th>#</th><th>Name</th><th>Roll No</th><th>Department</th><th>Route</th><th>Stop</th><th>Driver</th><th>Bus</th><th>Pickup / Drop</th><th>QR</th><th>PIN</th><th>Status</th><th>Actions</th></tr>
+              <tr><th>#</th><th>Name</th><th>College ID</th><th>Type</th><th>Route</th><th>Stop</th><th>Driver</th><th>Bus</th><th>Pickup / Drop</th><th>Status</th><th>Actions</th></tr>
             </thead>
             <tbody>
               @forelse($passengers as $p)
@@ -119,28 +117,12 @@
                   </a>
                 </td>
                 <td style="font-family:var(--font-mono);font-size:11px;">{{ $p->roll }}</td>
-                <td>{{ $p->department }}</td>
+                <td>{{ $p->passenger_type ?? '—' }}</td>
                 <td>{{ $p->route->name ?? '—' }}</td>
-                <td>{{ $p->routeStop?->name ?? $p->stop ?? '—' }}</td>
+                <td>{{ $p->Stop?->name ?? $p->stop ?? '—' }}</td>
                 <td>{{ $p->assignedDriver?->name ?? '—' }}</td>
                 <td>{{ $p->assignedVehicle?->number ?? '—' }}</td>
                 <td style="font-size:11px;white-space:nowrap;">{{ $p->pickup_time ?? '—' }} / {{ $p->dropoff_time ?? '—' }}</td>
-                <td>
-                  @if($p->qrIsActive())
-                    <a href="{{ route('passengers.qr', $p) }}" target="_blank" title="Download QR Pass" style="color:var(--color-primary);font-size:16px;">
-                      <i class="fas fa-qrcode"></i>
-                    </a>
-                  @else
-                    <span style="color:var(--color-text-faint);font-size:14px;" title="Locked until approved & fee paid"><i class="fas fa-ban"></i></span>
-                  @endif
-                </td>
-                <td>
-                  @if($p->fingerprint_enrolled)
-                    <span style="color:var(--color-success);font-size:16px;" title="Security PIN set"><i class="fas fa-fingerprint"></i></span>
-                  @else
-                    <span style="color:var(--color-text-faint);font-size:14px;"><i class="fas fa-fingerprint"></i></span>
-                  @endif
-                </td>
                 <td>
                   @if($p->approval_status === 'rejected')
                     <span class="badge badge-ERR">Rejected</span>
@@ -152,16 +134,21 @@
                   @endif
                 </td>
                 <td style="white-space:nowrap;">
-                  <a href="{{ route('passengers.show', $p) }}"  class="btn btn-S btn-sm" title="View Card"><i class="fas fa-id-card"></i></a>
-                    <a href="{{ route('passengers.edit', $p) }}"  class="btn btn-S btn-sm" title="Edit"><i class="fas fa-edit"></i></a>
-                  <form method="POST" action="{{ route('passengers.destroy', $p) }}" style="display:inline" onsubmit="return confirm('Delete {{ $p->name }}?')">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="btn btn-ERR btn-sm" title="Delete"><i class="fas fa-trash"></i></button>
-                  </form>
+                  <a href="{{ route('passengers.show', $p) }}" class="btn btn-S btn-sm" title="View Profile"><i class="fas fa-id-card"></i></a>
+                  @if($p->isApproved())
+                    <a href="{{ route('passengers.transport-card', $p) }}" class="btn btn-P btn-sm" title="Download Transport Card"><i class="fas fa-download"></i></a>
+                  @endif
+                  @if(Auth::user()->role === 'admin')
+                    <a href="{{ route('passengers.edit', $p) }}" class="btn btn-S btn-sm" title="Edit"><i class="fas fa-edit"></i></a>
+                    <form method="POST" action="{{ route('passengers.destroy', $p) }}" style="display:inline" onsubmit="return confirm('Delete {{ $p->name }}?')">
+                      @csrf @method('DELETE')
+                      <button type="submit" class="btn btn-ERR btn-sm" title="Delete"><i class="fas fa-trash"></i></button>
+                    </form>
+                  @endif
                 </td>
               </tr>
               @empty
-              <tr class="empty-row"><td colspan="13">No approved passengers yet.</td></tr>
+              <tr class="empty-row"><td colspan="12">No approved passengers yet.</td></tr>
               @endforelse
             </tbody>
           </table>

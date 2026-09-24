@@ -34,9 +34,9 @@ class Driver extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function dailyAssignments(): HasMany
+    public function schedules(): HasMany
     {
-        return $this->hasMany(DailyAssignment::class);
+        return $this->hasMany(Schedule::class, 'driver_id');
     }
 
     public function passengers(): HasMany

@@ -108,11 +108,11 @@
                   <div class="tile-val">{{ $driver->vehicle->route->name ?? '—' }}</div>
                 </div>
               </div>
-              @if($driver->vehicle && $driver->vehicle->route && $driver->vehicle->route->routeStops->count())
+              @if($driver->vehicle && $driver->vehicle->route && $driver->vehicle->route->Stops->count())
                 <div style="margin-top:14px;">
                   <div style="font-size:12px;color:rgba(30,27,46,.65);margin-bottom:6px;">Route Stops</div>
                   <div style="font-size:12px;font-weight:600;">
-                    {{ $driver->vehicle->route->routeStops->pluck('name')->implode(' → ') }}
+                    {{ $driver->vehicle->route->Stops->pluck('name')->implode(' → ') }}
                   </div>
                 </div>
               @endif
@@ -132,7 +132,8 @@
             </div>
           </div>
 
-          {{-- Complaints against this driver --}}
+          {{-- Complaints against this driver (Admin only) --}}
+          @if(Auth::user()->role === 'admin')
           <div class="card">
             <div class="card-header"><h3><i class="fas fa-triangle-exclamation" style="color:var(--color-danger);margin-right:6px;"></i>Complaints Against Driver</h3></div>
             <div class="card-body">
@@ -156,6 +157,7 @@
               </table>
             </div>
           </div>
+          @endif
 
         </div>
       </div>

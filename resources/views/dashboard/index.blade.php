@@ -76,7 +76,7 @@
           <div class="stat-tile-val">{{ $stats['total_vehicles'] }}</div>
         </div>
         <div class="stat-tile stat-tile-pink">
-          <div class="stat-tile-lbl"><i class="fas fa-steering-wheel"></i> Active Drivers</div>
+          <div class="stat-tile-lbl"><i class="fas fa-user-tie"></i> Active Drivers</div>
           <div class="stat-tile-val">{{ $stats['active_drivers'] }}</div>
         </div>
         <div class="stat-tile stat-tile-orange">
@@ -87,6 +87,7 @@
           <div class="stat-tile-lbl"><i class="fas fa-route"></i> Active Routes</div>
           <div class="stat-tile-val">{{ $stats['active_routes'] }}</div>
         </div>
+        
         @if(($stats['pending_requests'] ?? 0) > 0)
         <div class="stat-card" style="border-color:rgba(217,119,6,.3);">
           <div class="stat-icon" style="background:var(--color-warning-soft);color:var(--color-warning);">
@@ -111,20 +112,19 @@
         @endif
       </div>
 
-      <!-- TODAY'S SCHEDULE -->
-      @if(in_array(Auth::user()->role, ['admin', 'incharge']))
+      <!-- ACTIVE SCHEDULE -->
       <div class="card mt-4">
         <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
-          <h3><i class="fas fa-calendar-day" style="color:var(--color-warning);margin-right:6px;"></i>Today's Schedule ({{ \Carbon\Carbon::today()->format('d M Y') }})</h3>
+          <h3><i class="fas fa-calendar-check" style="color:var(--color-warning);margin-right:6px;"></i>Active Schedule</h3>
           <a href="{{ route('schedule.index') }}" class="btn btn-S btn-sm">
             <i class="fas fa-list"></i> Manage Schedule
           </a>
         </div>
         <div class="card-body">
-          @if($unassignedRoutesToday > 0)
+          @if($unassignedRoutes > 0)
             <div class="alert-warning" style="margin-bottom:14px;">
               <i class="fas fa-triangle-exclamation"></i>
-              <div><strong>{{ $unassignedRoutesToday }} active route(s)</strong> still have no day-specific assignment for today — they'll run on their default driver/vehicle/timing.</div>
+              <div><strong>{{ $unassignedRoutes }} active route(s)</strong> do not yet have a persistent Schedule configured.</div>
             </div>
           @endif
 
@@ -135,23 +135,22 @@
               </tr>
             </thead>
             <tbody>
-              @forelse($todaysAssignments as $a)
+              @forelse($schedules as $schedule)
               <tr>
-                <td>{{ $a->route->name ?? '—' }}</td>
-                <td>{{ $a->driver?->name ?? '— (default)' }}</td>
-                <td>{{ $a->vehicle?->number ?? '— (default)' }}</td>
-                <td>{{ $a->estimated_passengers ?? '—' }}</td>
-                <td>{{ $a->estimated_departure_time ?? '—' }}</td>
-                <td><span class="badge {{ $a->status=='Scheduled' ? 'badge-G' : ($a->status=='Completed' ? 'badge-B' : 'badge-ERR') }}">{{ $a->status }}</span></td>
+                <td>{{ $schedule->route->name ?? '—' }}</td>
+                <td>{{ $schedule->driver?->name ?? '—' }}</td>
+                <td>{{ $schedule->vehicle?->number ?? '—' }}</td>
+                <td>{{ $schedule->estimated_passengers ?? '—' }}</td>
+                <td>{{ $schedule->estimated_departure_time ?? '—' }}</td>
+                <td><span class="badge {{ $schedule->status=='Scheduled' ? 'badge-G' : ($schedule->status=='Completed' ? 'badge-B' : 'badge-ERR') }}">{{ $schedule->status }}</span></td>
               </tr>
               @empty
-              <tr class="empty-row"><td colspan="6">No day-specific assignments set yet for today.</td></tr>
+              <tr class="empty-row"><td colspan="6">No Schedule has been configured yet.</td></tr>
               @endforelse
             </tbody>
           </table>
         </div>
       </div>
-      @endif
 
       <!-- RECENT ACTIVITY -->
       <div class="card mt-4">
@@ -162,8 +161,8 @@
               <tr>
                 <th>#</th>
                 <th>Event</th>
-                <th>Vehicle</th>
-                <th>Driver</th>
+                <th>Passenger</th>
+                <th>Month</th>
                 <th>Time</th>
                 <th>Status</th>
               </tr>
@@ -173,8 +172,8 @@
               <tr>
                 <td>{{ $a['id'] }}</td>
                 <td>{{ $a['event'] }}</td>
-                <td>{{ $a['vehicle'] }}</td>
-                <td>{{ $a['driver'] }}</td>
+                <td>{{ $a['passenger'] }}</td>
+                <td>{{ $a['month'] }}</td>
                 <td>{{ $a['time'] }}</td>
                 <td>
                   <span class="badge {{ $a['status']=='Active' ? 'badge-G' : ($a['status']=='Done' ? 'badge-B' : 'badge-ERR') }}">

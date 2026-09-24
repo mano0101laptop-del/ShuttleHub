@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class FeeSetting extends Model
 {
-    protected $fillable = ['monthly_fee', 'updated_by'];
+    protected $fillable = ['monthly_fee', 'payment_instructions', 'jazzcash_number', 'easypaisa_number', 'updated_by'];
 
     protected $casts = [
         'monthly_fee' => 'decimal:2',

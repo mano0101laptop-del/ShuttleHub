@@ -23,9 +23,9 @@ class Vehicle extends Model
         return $this->hasOne(Route::class);
     }
 
-    public function dailyAssignments(): HasMany
+    public function schedules(): HasMany
     {
-        return $this->hasMany(DailyAssignment::class);
+        return $this->hasMany(Schedule::class, 'vehicle_id');
     }
 
     public function passengers(): HasMany

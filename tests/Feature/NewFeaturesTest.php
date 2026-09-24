@@ -8,7 +8,6 @@ use App\Models\Message;
 use App\Models\Announcement;
 use App\Models\Complaint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Hash;
 
 uses(RefreshDatabase::class);
 
@@ -65,8 +64,6 @@ test('admin can publish an announcement and it appears on the passenger dashboar
     $passenger = Passenger::create([
         'user_id' => $pu->id, 'name' => 'Ann P', 'roll' => 'ANN-1', 'department' => 'CS',
         'status' => 'Active', 'approval_status' => 'approved',
-        'qr_token' => Passenger::generateQrToken(),
-        'fingerprint_hash' => Hash::make('123456'), 'fingerprint_enrolled' => true,
     ]);
 
     $this->actingAs($pu)->get('/dashboard')->assertOk()->assertSee('Route Change');
@@ -78,8 +75,6 @@ test('passenger can submit a complaint against a driver and admin can respond', 
     $passenger = Passenger::create([
         'user_id' => $pu->id, 'name' => 'Complainer', 'roll' => 'CMP-1', 'department' => 'CS',
         'status' => 'Active', 'approval_status' => 'approved',
-        'qr_token' => Passenger::generateQrToken(),
-        'fingerprint_hash' => Hash::make('123456'), 'fingerprint_enrolled' => true,
     ]);
     $driver = Driver::create(['name' => 'Bad Driver', 'phone' => '0300', 'license' => 'L-CMP', 'status' => 'Active']);
 
@@ -99,36 +94,12 @@ test('passenger can submit a complaint against a driver and admin can respond', 
     expect($complaint->fresh()->status)->toBe('resolved');
 });
 
-test('passenger cannot download QR pass until approved and fee is active', function () {
-    $pu = makeRoleUser('passenger', 'qp');
-    $passenger = Passenger::create([
-        'user_id' => $pu->id, 'name' => 'Locked QR', 'roll' => 'QR-1', 'department' => 'CS',
-        'status' => 'Active', 'approval_status' => 'approved',
-        'qr_token' => Passenger::generateQrToken(),
-        'fingerprint_hash' => Hash::make('123456'), 'fingerprint_enrolled' => true,
-    ]);
-
-    expect($passenger->qrIsActive())->toBeFalse();
-    $this->actingAs($pu)->get("/passengers/{$passenger->id}/qr")->assertRedirect();
-
-    FeePayment::create([
-        'passenger_id' => $passenger->id, 'month' => now()->format('Y-m'), 'amount' => 1000,
-        'tid' => 'TXN-QR', 'screenshot_path' => 'x.jpg', 'status' => 'approved',
-        'qr_expires_at' => now()->endOfMonth(),
-    ]);
-
-    expect($passenger->fresh()->qrIsActive())->toBeTrue();
-    $this->actingAs($pu)->get("/passengers/{$passenger->id}/qr")->assertOk();
-});
-
 test('passenger can request cancellation and admin can approve it', function () {
     $admin = makeRoleUser('admin', 'xa');
     $pu = makeRoleUser('passenger', 'xp');
     $passenger = Passenger::create([
         'user_id' => $pu->id, 'name' => 'Cancel Me', 'roll' => 'CAN-1', 'department' => 'CS',
         'status' => 'Active', 'approval_status' => 'approved',
-        'qr_token' => Passenger::generateQrToken(),
-        'fingerprint_hash' => Hash::make('123456'), 'fingerprint_enrolled' => true,
     ]);
 
     $this->actingAs($pu)->post("/passengers/{$passenger->id}/cancellation", [
@@ -157,23 +128,85 @@ test('admin can view a full driver profile and a full incharge profile', functio
     $this->actingAs($admin)->get("/staff/{$incharge->id}")->assertOk()->assertSee($incharge->name);
 });
 
-test('admin sees the attendance report but not the attendance marking screen', function () {
-    $admin = makeRoleUser('admin', 'rpt');
-
-    foreach (['daily', 'weekly', 'monthly', 'yearly'] as $period) {
-        $this->actingAs($admin)->get("/reports/attendance?period={$period}")->assertOk();
-    }
-
-    $this->actingAs($admin)->get('/attendance')->assertForbidden();
-});
-
 test('passenger create form offers route stops for dynamic selection', function () {
-    $incharge = makeRoleUser('incharge', 'stp');
+    $admin = makeRoleUser('admin', 'stp');
     $vehicle = \App\Models\Vehicle::create(['number' => 'STP-1', 'type' => 'Bus', 'capacity' => 30, 'status' => 'Active']);
     $route = \App\Models\Route::create(['name' => 'Stop Route', 'from' => 'A', 'to' => 'B', 'stops' => 1, 'status' => 'Active', 'vehicle_id' => $vehicle->id]);
-    \App\Models\RouteStop::create(['route_id' => $route->id, 'name' => 'Main Gate', 'sequence' => 1, 'eta' => '8:15 AM']);
+    \App\Models\Stop::create(['route_id' => $route->id, 'name' => 'Main Gate', 'sequence' => 1, 'eta' => '8:15 AM']);
 
-    $resp = $this->actingAs($incharge)->get('/passengers/create');
+    $resp = $this->actingAs($admin)->get('/passengers/create');
     $resp->assertOk();
     $resp->assertSee('Main Gate');
+});
+
+test('incharge cannot access announcement complaint or administrative management actions', function () {
+    $incharge = makeRoleUser('incharge', 'limited');
+
+    $this->actingAs($incharge)->get('/announcements')->assertForbidden();
+    $this->actingAs($incharge)->post('/announcements', [
+        'title' => 'Blocked', 'body' => 'Blocked', 'audience' => 'all',
+    ])->assertForbidden();
+    $this->actingAs($incharge)->get('/complaints')->assertForbidden();
+    $this->actingAs($incharge)->get('/complaints/create')->assertForbidden();
+    $this->actingAs($incharge)->get('/vehicles/create')->assertForbidden();
+    $this->actingAs($incharge)->get('/drivers/create')->assertForbidden();
+    $this->actingAs($incharge)->get('/passengers/create')->assertForbidden();
+    $this->actingAs($incharge)->get('/tmsroutes/create')->assertForbidden();
+    $this->actingAs($incharge)->get('/staff')->assertForbidden();
+});
+
+test('admin has full complaint management access', function () {
+    $admin = makeRoleUser('admin', 'complaintadmin');
+    $pu = makeRoleUser('passenger', 'complaintowner');
+    $passenger = Passenger::create([
+        'user_id' => $pu->id, 'name' => 'Complaint Owner', 'roll' => 'CO-1', 'department' => 'CS',
+        'status' => 'Active', 'approval_status' => 'approved',
+    ]);
+
+    $this->actingAs($admin)->get('/complaints/create')->assertOk();
+    $this->actingAs($admin)->post('/complaints', [
+        'passenger_id' => $passenger->id,
+        'type' => 'complaint',
+        'against_type' => 'general',
+        'subject' => 'Admin-created record',
+        'message' => 'Created through Admin complaint management.',
+    ])->assertRedirect('/complaints');
+
+    $complaint = Complaint::where('subject', 'Admin-created record')->firstOrFail();
+    $this->actingAs($admin)->put("/complaints/{$complaint->id}", [
+        'passenger_id' => $passenger->id,
+        'type' => 'feedback',
+        'against_type' => 'general',
+        'subject' => 'Updated record',
+        'message' => 'Updated through Admin complaint management.',
+    ])->assertRedirect('/complaints');
+
+    expect($complaint->fresh()->subject)->toBe('Updated record');
+
+    $this->actingAs($admin)->delete("/complaints/{$complaint->id}")->assertRedirect('/complaints');
+    $this->assertDatabaseMissing('complaints', ['id' => $complaint->id]);
+});
+
+test('persistent Schedule selects the most recently saved row regardless of date', function () {
+    $admin = makeRoleUser('admin', 'scheduleadmin');
+    $route = \App\Models\Route::create([
+        'name' => 'Persistent Route', 'from' => 'A', 'to' => 'B', 'stops' => 0, 'status' => 'Active',
+    ]);
+
+    \App\Models\Schedule::create([
+        'date' => now()->addYear()->toDateString(),
+        'route_id' => $route->id,
+        'status' => 'Scheduled',
+        'created_by' => $admin->id,
+    ]);
+    $latestSaved = \App\Models\Schedule::create([
+        'date' => now()->subYear()->toDateString(),
+        'route_id' => $route->id,
+        'status' => 'In Progress',
+        'created_by' => $admin->id,
+    ]);
+
+    $current = \App\Models\Schedule::current()->where('route_id', $route->id)->first();
+    expect($current->id)->toBe($latestSaved->id);
+    expect($current->status)->toBe('In Progress');
 });

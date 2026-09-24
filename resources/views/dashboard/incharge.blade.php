@@ -1,5 +1,5 @@
 @extends('layout.app')
-@section('title', 'Dashboard — TM Service')
+@section('title', 'Incharge Dashboard — Shuttle Hub')
 @section('content')
 
 <div class="screen active" id="screen-app">
@@ -15,102 +15,92 @@
       @endif
 
       <p style="font-size:13px;color:rgba(30,27,46,.55);margin-bottom:16px;">
-        Ground operations for today. Fleet setup, transport fee approvals, and enrollment
-        decisions are handled by Admin — you're set up to run attendance, passenger
-        lookups, and complaints.
+        Day-to-day transport operations. System configuration, enrollment approvals, payment controls, publishing announcements, complaints, and staff management are handled by Admin — you can view published announcements below.
       </p>
-
-      {{-- Open Complaints Alert --}}
-      @if(($stats['open_complaints'] ?? 0) > 0)
-      <div class="alert-info">
-        <i class="fas fa-comment-dots"></i>
-        <div>
-          <strong>{{ $stats['open_complaints'] }} complaint/feedback submission(s) awaiting a response.</strong>
-        </div>
-        <a href="{{ route('complaints.index') }}" class="btn btn-sm alert-action" style="background:transparent;border:1px solid rgba(37,99,235,.4);color:var(--color-info);">
-          Review Now <i class="fas fa-arrow-right"></i>
-        </a>
-      </div>
-      @endif
-
-      {{-- Cancellation requests are informational here — only Admin can approve/reject them --}}
-      @if(($stats['pending_cancellations'] ?? 0) > 0)
-      <div class="alert-warning">
-        <i class="fas fa-ban"></i>
-        <div>
-          <strong>{{ $stats['pending_cancellations'] }} cancellation request(s) waiting on Admin.</strong>
-          <span style="opacity:.8;font-weight:400;">You can view them; only Admin can approve or reject.</span>
-        </div>
-      </div>
-      @endif
 
       {{-- Quick actions --}}
       <div class="stats-grid" style="margin-bottom:4px;">
-        <a href="{{ route('attendance.index') }}" class="stat-card" style="text-decoration:none;">
-          <div class="stat-icon" style="background:rgba(124,58,237,.15);color:#7C3AED;"><i class="fas fa-camera"></i></div>
-          <div class="stat-info"><div class="stat-val" style="font-size:15px;">Attendance</div><div class="stat-lbl">Camera / Manual / PIN / QR Pass</div></div>
+        <a href="{{ route('schedule.index') }}" class="stat-card" style="text-decoration:none;">
+          <div class="stat-icon" style="background:rgba(217,119,6,.15);color:#D97706;"><i class="fas fa-calendar-check"></i></div>
+          <div class="stat-info"><div class="stat-val" style="font-size:15px;">Schedule</div><div class="stat-lbl">Maintain the active transport Schedule</div></div>
         </a>
         <a href="{{ route('passengers.index') }}" class="stat-card" style="text-decoration:none;">
           <div class="stat-icon" style="background:rgba(37,99,235,.15);color:#2563EB;"><i class="fas fa-users"></i></div>
-          <div class="stat-info"><div class="stat-val" style="font-size:15px;">Passengers</div><div class="stat-lbl">Look up, edit stop/route, reset PIN</div></div>
-        </a>
-        <a href="{{ route('complaints.index') }}" class="stat-card" style="text-decoration:none;">
-          <div class="stat-icon" style="background:rgba(37,99,235,.15);color:#2563EB;"><i class="fas fa-comment-dots"></i></div>
-          <div class="stat-info"><div class="stat-val" style="font-size:15px;">Complaints</div><div class="stat-lbl">First-line response</div></div>
+          <div class="stat-info"><div class="stat-val" style="font-size:15px;">Passengers</div><div class="stat-lbl">Read-only passenger lookup</div></div>
         </a>
         <a href="{{ route('messages.index') }}" class="stat-card" style="text-decoration:none;">
           <div class="stat-icon" style="background:rgba(22,163,74,.15);color:#16A34A;"><i class="fas fa-comments"></i></div>
           <div class="stat-info"><div class="stat-val" style="font-size:15px;">Driver Messages</div><div class="stat-lbl">Coordinate with drivers</div></div>
         </a>
+        <a href="{{ route('announcements.index') }}" class="stat-card" style="text-decoration:none;">
+          <div class="stat-icon" style="background:rgba(124,58,237,.15);color:#7C3AED;"><i class="fas fa-bullhorn"></i></div>
+          <div class="stat-info"><div class="stat-val" style="font-size:15px;">Announcements</div><div class="stat-lbl">View-only — published by Admin</div></div>
+        </a>
       </div>
 
-      {{-- Today's attendance numbers --}}
+      {{-- Operational snapshot --}}
       <div class="stats-grid mt-4">
         <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(22,163,74,.15);color:#16A34A;"><i class="fas fa-user-check"></i></div>
-          <div class="stat-info"><div class="stat-val">{{ $stats['present'] }}</div><div class="stat-lbl">Present Today</div></div>
+          <div class="stat-icon" style="background:rgba(37,99,235,.15);color:#2563EB;"><i class="fas fa-users"></i></div>
+          <div class="stat-info"><div class="stat-val">{{ $stats['passengers'] }}</div><div class="stat-lbl">Active Passengers</div></div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(220,38,38,.15);color:#DC2626;"><i class="fas fa-user-xmark"></i></div>
-          <div class="stat-info"><div class="stat-val">{{ $stats['absent'] }}</div><div class="stat-lbl">Absent Today</div></div>
+          <div class="stat-icon" style="background:rgba(22,163,74,.15);color:#16A34A;"><i class="fas fa-route"></i></div>
+          <div class="stat-info"><div class="stat-val">{{ $stats['routes'] }}</div><div class="stat-lbl">Active Routes</div></div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(124,58,237,.15);color:#7C3AED;"><i class="fas fa-qrcode"></i></div>
-          <div class="stat-info"><div class="stat-val">{{ $stats['qr_scans'] }}</div><div class="stat-lbl">QR Scans</div></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(217,119,6,.15);color:#D97706;"><i class="fas fa-shield-halved"></i></div>
-          <div class="stat-info"><div class="stat-val">{{ $stats['pin_verifies'] }}</div><div class="stat-lbl">Security PIN Verifies</div></div>
+          <div class="stat-icon" style="background:rgba(217,119,6,.15);color:#D97706;"><i class="fas fa-calendar-check"></i></div>
+          <div class="stat-info"><div class="stat-val">{{ $stats['schedules'] }}</div><div class="stat-lbl">Schedules Set</div></div>
         </div>
       </div>
 
-      {{-- Recent attendance --}}
+      {{-- Current Schedule --}}
       <div class="card mt-4">
         <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
-          <h3>Recent Attendance</h3>
-          <a href="{{ route('attendance.index') }}" class="btn btn-S" style="font-size:12px;">Open Attendance <i class="fas fa-arrow-right"></i></a>
+          <h3>Current Schedule</h3>
+          <a href="{{ route('schedule.index') }}" class="btn btn-S" style="font-size:12px;">Open Schedule <i class="fas fa-arrow-right"></i></a>
         </div>
         <div class="card-body">
           <table class="tbl">
             <thead>
-              <tr><th>#</th><th>Name</th><th>Roll</th><th>Route</th><th>Time</th><th>Method</th><th>Status</th></tr>
+              <tr><th>Route</th><th>Driver</th><th>Vehicle</th><th>Departure</th><th>Status</th></tr>
             </thead>
             <tbody>
-              @forelse($recent_attendance as $a)
+              @forelse($schedules as $schedule)
               <tr>
-                <td>{{ $loop->iteration }}</td>
-                <td>{{ $a->passenger->name ?? '—' }}</td>
-                <td style="font-family:monospace;font-size:11px;">{{ $a->passenger->roll ?? '—' }}</td>
-                <td>{{ $a->passenger->route->name ?? '—' }}</td>
-                <td>{{ $a->time ? \Carbon\Carbon::parse($a->time)->format('h:i A') : '—' }}</td>
-                <td style="font-size:11px;text-transform:capitalize;">{{ $a->method }}</td>
-                <td><span class="badge {{ $a->status=='Present' ? 'badge-G' : 'badge-ERR' }}">{{ $a->status }}</span></td>
+                <td>{{ $schedule->route->name ?? '—' }}</td>
+                <td>{{ $schedule->driver?->name ?? '—' }}</td>
+                <td>{{ $schedule->vehicle?->number ?? '—' }}</td>
+                <td>{{ $schedule->estimated_departure_time ?? '—' }}</td>
+                <td><span class="badge {{ $schedule->status=='Scheduled' ? 'badge-G' : ($schedule->status=='Completed' ? 'badge-B' : 'badge-ERR') }}">{{ $schedule->status }}</span></td>
               </tr>
               @empty
-              <tr><td colspan="7" style="text-align:center;color:rgba(30,27,46,.55);">No attendance records yet today.</td></tr>
+              <tr><td colspan="5" style="text-align:center;color:rgba(30,27,46,.55);">No Schedule has been configured yet.</td></tr>
               @endforelse
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {{-- Recent announcements (view-only; Admin publishes) --}}
+      <div class="card mt-4">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <h3><i class="fas fa-bullhorn" style="color:#7C3AED;margin-right:6px;"></i>Recent Announcements</h3>
+          <a href="{{ route('announcements.index') }}" class="btn btn-S" style="font-size:12px;">View All <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="card-body">
+          @forelse($announcements as $announcement)
+          <div style="padding:10px 0;border-bottom:1px solid rgba(30,27,46,.08);">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+              <div style="font-weight:600;font-size:13px;color:var(--color-text);">{{ $announcement->title }}</div>
+              <span class="badge badge-B" style="flex-shrink:0;">{{ ucfirst($announcement->audience) }}</span>
+            </div>
+            <div style="font-size:12px;color:var(--color-text-muted);margin-top:2px;">{{ \Illuminate\Support\Str::limit($announcement->body, 120) }}</div>
+            <div style="font-size:11px;color:var(--color-text-faint);margin-top:4px;">{{ $announcement->created_at->format('d M Y') }}</div>
+          </div>
+          @empty
+          <div style="text-align:center;color:rgba(30,27,46,.55);padding:14px 0;">No announcements yet.</div>
+          @endforelse
         </div>
       </div>
 

@@ -17,15 +17,15 @@ class PassengerPolicy
             || $user->id === $passenger->user_id;
     }
 
-    /** Only staff manage (create/edit/delete) passenger records. */
+    /** Only Admin manages (create/edit/delete) passenger records. */
     public function manage(User $user): bool
     {
-        return in_array($user->role, ['admin', 'incharge'], true);
+        return $user->role === 'admin';
     }
 
-    /** Only staff approve or reject applications. */
+    /** Only Admin approves or rejects applications. */
     public function approve(User $user): bool
     {
-        return in_array($user->role, ['admin', 'incharge'], true);
+        return $user->role === 'admin';
     }
 }

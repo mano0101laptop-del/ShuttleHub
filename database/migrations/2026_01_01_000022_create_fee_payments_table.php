@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Schema;
  *
  * Lifecycle:
  *   pending  -> passenger uploaded a payment screenshot + TID for a month
- *   approved -> admin verified it; a fresh qr_token is issued, valid until
- *               qr_expires_at (end of the paid month)
+ *   approved -> admin verified it; the pass is valid until valid_until
+ *               (end of the paid month)
  *   rejected -> admin declined it (see rejection_reason); passenger must
  *               resubmit
  *
@@ -35,8 +35,7 @@ return new class extends Migration
             $table->string('status')->default('pending'); // pending, approved, rejected
             $table->string('rejection_reason')->nullable();
 
-            $table->string('qr_token')->nullable()->unique();
-            $table->date('qr_expires_at')->nullable();
+            $table->date('valid_until')->nullable();
 
             $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('approved_at')->nullable();

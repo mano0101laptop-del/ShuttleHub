@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class DriverController extends Controller
 {
@@ -20,7 +21,7 @@ class DriverController extends Controller
     // ── Full driver profile — photo, CNIC, assigned vehicle/route, complaints ──
     public function show(Driver $driver)
     {
-        $driver->load('vehicle.route.routeStops', 'user', 'complaintsAgainst.passenger');
+        $driver->load('vehicle.route.Stops', 'user', 'complaintsAgainst.passenger');
         return view('drivers.show', compact('driver'));
     }
 
@@ -32,11 +33,18 @@ class DriverController extends Controller
 
     public function store(Request $request)
     {
+        // NOTE: Driver uses SoftDeletes (a "delete" only sets deleted_at, the
+        // row still exists). Plain unique:drivers,license / unique:drivers,cnic
+        // rules query ALL rows including soft-deleted ones, so re-adding a
+        // driver after a previous one with the same license/CNIC was removed
+        // always failed validation with "already been taken" — this is the
+        // "driver not adding, shows error" bug. Scope the uniqueness check to
+        // only rows that are not soft-deleted.
         $request->validate([
             'name'                => 'required|string|max:255',
             'phone'               => 'required|string|max:20',
-            'license'             => 'required|string|unique:drivers,license',
-            'cnic'                => 'required|string|max:20|unique:drivers,cnic',
+            'license'             => ['required', 'string', Rule::unique('drivers', 'license')->whereNull('deleted_at')],
+            'cnic'                => ['required', 'string', 'max:20', Rule::unique('drivers', 'cnic')->whereNull('deleted_at')],
             'dob'                 => 'nullable|date',
             'address'             => 'nullable|string|max:255',
             'email'               => 'nullable|email|max:255|unique:users,email',
@@ -111,8 +119,8 @@ class DriverController extends Controller
         $request->validate([
             'name'                => 'required|string|max:255',
             'phone'               => 'required|string|max:20',
-            'license'             => 'required|string|unique:drivers,license,' . $driver->id,
-            'cnic'                => 'required|string|max:20|unique:drivers,cnic,' . $driver->id,
+            'license'             => ['required', 'string', Rule::unique('drivers', 'license')->ignore($driver->id)->whereNull('deleted_at')],
+            'cnic'                => ['required', 'string', 'max:20', Rule::unique('drivers', 'cnic')->ignore($driver->id)->whereNull('deleted_at')],
             'dob'                 => 'nullable|date',
             'address'             => 'nullable|string|max:255',
             'email'               => 'nullable|email|max:255|unique:users,email,' . ($driver->user_id ?? 'NULL'),
@@ -240,7 +248,7 @@ class DriverController extends Controller
 
     // ── Stream a driver's CNIC image from the private disk ──
     // Route is already behind role:admin,incharge (see routes/web.php), so
-    // only staff who can manage drivers can ever reach this — no public URL,
+    // only authenticated operational staff can reach this — no public URL,
     // no guessable path, unlike the old public-disk storage.
     public function showCnic(Driver $driver, string $side)
     {

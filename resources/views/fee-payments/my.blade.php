@@ -26,24 +26,24 @@
 
       <div class="detail-grid--narrow">
 
-        {{-- ── Left: Fee status (no separate QR — the one transport QR lives on your dashboard) ── --}}
+        {{-- ── Left: Fee status ── --}}
         <div class="card" style="text-align:center;padding:0;overflow:hidden;">
           @if($active)
             <div style="background:var(--gradient-brand);padding:16px 16px 12px;">
               <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.75);margin-bottom:4px;">Transport Fee</div>
               <div style="font-size:16px;font-weight:700;color:#fff;">{{ $active->monthLabel() }}</div>
-              <div style="font-size:12px;color:rgba(255,255,255,.85);">Paid — valid until {{ $active->qr_expires_at->format('d M Y') }}</div>
+              <div style="font-size:12px;color:rgba(255,255,255,.85);">Paid — valid until {{ $active->valid_until->format('d M Y') }}</div>
             </div>
             <div style="padding:28px 20px;">
               <div style="width:64px;height:64px;background:var(--color-success-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;border:2px solid rgba(22,163,74,.3);">
                 <i class="fas fa-circle-check" style="font-size:26px;color:var(--color-success);"></i>
               </div>
-              <h3 style="margin-bottom:6px;">Fee Paid — Pass Unlocked</h3>
+              <h3 style="margin-bottom:6px;">Fee Paid — Pass Active</h3>
               <p style="color:var(--color-text-muted);font-size:13px;max-width:280px;margin:0 auto 16px;">
-                Your transport QR code is now active. Show it from your dashboard when boarding or marking attendance.
+                Your transport pass is now active for this month.
               </p>
               <a href="{{ route('dashboard') }}" class="btn btn-P" style="justify-content:center;font-size:12px;">
-                <i class="fas fa-qrcode"></i> View My QR Pass
+                <i class="fas fa-id-card"></i> View My Dashboard
               </a>
             </div>
           @elseif($pending)
@@ -53,7 +53,7 @@
               </div>
               <h3 style="margin-bottom:6px;">Payment Under Review</h3>
               <p style="color:var(--color-text-muted);font-size:13px;max-width:280px;margin:0 auto;">
-                Your payment of Rs. {{ number_format($pending->amount, 2) }} for {{ $pending->monthLabel() }} (TID: {{ $pending->tid }}) is awaiting admin approval. Your QR pass will unlock on your dashboard once approved.
+                Your payment of Rs. {{ number_format($pending->amount, 2) }} for {{ $pending->monthLabel() }} (TID: {{ $pending->tid }}) is awaiting admin approval. Your pass will activate once approved.
               </p>
             </div>
           @else
@@ -63,7 +63,7 @@
               </div>
               <h3 style="margin-bottom:6px;">No Active Pass</h3>
               <p style="color:var(--color-text-muted);font-size:13px;max-width:280px;margin:0 auto;">
-                You don't have an active transport pass. Pay for {{ \Carbon\Carbon::createFromFormat('Y-m', $targetMonth)->format('F Y') }} to unlock your QR pass.
+                You don't have an active transport pass. Pay for {{ \Carbon\Carbon::createFromFormat('Y-m', $targetMonth)->format('F Y') }} to activate your pass.
               </p>
             </div>
           @endif
@@ -96,16 +96,45 @@
               </form>
               <div style="display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--color-text-faint);font-size:11px;">
                 <div style="flex:1;height:1px;background:var(--color-border);"></div>
-                OR PAY VIA BANK TRANSFER
+                OR USE ANOTHER PAYMENT OPTION
                 <div style="flex:1;height:1px;background:var(--color-border);"></div>
               </div>
               @endif
 
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px;">
+                @if($setting->jazzcash_number)
+                <div style="border:1px solid var(--color-border);border-radius:12px;padding:12px;">
+                  <div style="font-size:12px;font-weight:700;color:var(--color-text);"><i class="fas fa-mobile-screen" style="color:var(--color-primary);margin-right:5px;"></i>JazzCash</div>
+                  <div style="font-size:16px;font-weight:800;margin-top:5px;">{{ $setting->jazzcash_number }}</div>
+                  <div style="font-size:10px;color:var(--color-text-faint);margin-top:3px;">Send the fee to this number, then submit the TID and screenshot.</div>
+                </div>
+                @endif
+                @if($setting->easypaisa_number)
+                <div style="border:1px solid var(--color-border);border-radius:12px;padding:12px;">
+                  <div style="font-size:12px;font-weight:700;color:var(--color-text);"><i class="fas fa-mobile-screen-button" style="color:var(--color-success);margin-right:5px;"></i>Easypaisa</div>
+                  <div style="font-size:16px;font-weight:800;margin-top:5px;">{{ $setting->easypaisa_number }}</div>
+                  <div style="font-size:10px;color:var(--color-text-faint);margin-top:3px;">Send the fee to this number, then submit the TID and screenshot.</div>
+                </div>
+                @endif
+              </div>
+
               <p style="font-size:12px;color:var(--color-text-muted);margin-bottom:10px;">
-                Pay via your usual bank/transfer method, then submit the transaction ID and a screenshot below.
+                For JazzCash, Easypaisa, or the existing manual transfer method, choose the payment method and submit the transaction ID plus screenshot below.
               </p>
               <form method="POST" action="{{ route('fee.pay') }}" enctype="multipart/form-data">
                 @csrf
+                <div class="lf-group">
+                  <label class="lf-label">Payment Method *</label>
+                  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    @if($setting->jazzcash_number)
+                    <label class="btn btn-S" style="cursor:pointer;"><input type="radio" name="payment_method" value="jazzcash" {{ old('payment_method') === 'jazzcash' ? 'checked' : '' }} required> JazzCash</label>
+                    @endif
+                    @if($setting->easypaisa_number)
+                    <label class="btn btn-S" style="cursor:pointer;"><input type="radio" name="payment_method" value="easypaisa" {{ old('payment_method') === 'easypaisa' ? 'checked' : '' }} required> Easypaisa</label>
+                    @endif
+                    <label class="btn btn-S" style="cursor:pointer;"><input type="radio" name="payment_method" value="manual" {{ old('payment_method', 'manual') === 'manual' ? 'checked' : '' }} required> Bank / Other Transfer</label>
+                  </div>
+                </div>
                 <div class="lf-group">
                   <label class="lf-label">Transaction ID (TID) *</label>
                   <div class="lf-input-wrap">
@@ -142,7 +171,11 @@
                     <td>Rs. {{ number_format($h->amount, 2) }}</td>
                     <td style="font-family:var(--font-mono);font-size:11px;">
                       @if($h->payment_method === 'stripe')
-                        <span class="badge badge-B" style="font-family:inherit;">Card</span>
+                        <span class="badge badge-B" style="font-family:inherit;">Card (Stripe)</span>
+                      @elseif($h->payment_method === 'jazzcash')
+                        <span class="badge badge-B" style="font-family:inherit;">JazzCash</span><br>{{ $h->tid }}
+                      @elseif($h->payment_method === 'easypaisa')
+                        <span class="badge badge-G" style="font-family:inherit;">Easypaisa</span><br>{{ $h->tid }}
                       @else
                         {{ $h->tid }}
                       @endif
@@ -156,7 +189,7 @@
                         <span class="badge badge-ERR">Rejected</span>
                       @endif
                     </td>
-                    <td style="font-size:12px;color:var(--color-text-faint);">{{ $h->qr_expires_at ? $h->qr_expires_at->format('d M Y') : '—' }}</td>
+                    <td style="font-size:12px;color:var(--color-text-faint);">{{ $h->valid_until ? $h->valid_until->format('d M Y') : '—' }}</td>
                   </tr>
                   @empty
                   <tr><td colspan="5" style="text-align:center;color:var(--color-text-faint);">No payments submitted yet.</td></tr>

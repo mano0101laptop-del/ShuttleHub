@@ -3,17 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
-use App\Models\DailyAssignment;
+use App\Models\Schedule;
 use App\Models\Vehicle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ScannerController extends Controller
 {
-    /**
-     * Dedicated scanner terminal. A scanner account first selects the bus,
-     * confirms today's driver / route / stops, and then opens the camera.
-     */
+    /** Dedicated scanner terminal. */
     public function index()
     {
         $today = today()->toDateString();
@@ -27,10 +24,9 @@ class ScannerController extends Controller
     }
 
     /**
-     * Resolve a typed bus number to the operational details the scanner needs.
-     * Today's Schedule takes priority, while the permanent bus/route
-     * relationship remains a safe fallback when no day-specific assignment
-     * has been created yet.
+     * Resolve a typed bus number to operational details. The persistent
+     * Schedule takes priority; the permanent bus/route relationship remains
+     * the fallback only when no Schedule has been configured for that route.
      */
     public function busDetails(Request $request): JsonResponse
     {
@@ -40,7 +36,7 @@ class ScannerController extends Controller
 
         $typedNumber = trim($validated['bus_number']);
 
-        $vehicle = Vehicle::with(['driver', 'route.routeStops'])
+        $vehicle = Vehicle::with(['driver', 'route.Stops'])
             ->whereRaw('LOWER(number) = ?', [strtolower($typedNumber)])
             ->first();
 
@@ -58,41 +54,45 @@ class ScannerController extends Controller
             ], 422);
         }
 
-        $assignmentQuery = DailyAssignment::with([
-                'driver',
-                'vehicle',
-                'route.routeStops',
-                'stops',
-            ])
-            ->whereDate('date', today())
-            ->where('status', '!=', 'Cancelled');
+        $scheduleQuery = Schedule::current()->with([
+            'driver',
+            'vehicle',
+            'route.Stops',
+            'stops',
+        ]);
 
-        // First preference: this exact bus was explicitly assigned today.
-        $assignment = (clone $assignmentQuery)
+        // First preference: this exact bus is explicitly assigned in the Schedule.
+        $schedule = (clone $scheduleQuery)
             ->where('vehicle_id', $vehicle->id)
             ->first();
 
-        // Otherwise use today's assignment for the bus's normal route only
-        // when that assignment did not swap in a different vehicle.
-        if (!$assignment && $vehicle->route) {
-            $routeAssignment = (clone $assignmentQuery)
+        // Otherwise resolve the persistent Schedule for the bus's normal route.
+        if (!$schedule && $vehicle->route) {
+            $routeSchedule = (clone $scheduleQuery)
                 ->where('route_id', $vehicle->route->id)
                 ->first();
 
-            if ($routeAssignment && $routeAssignment->vehicle_id && $routeAssignment->vehicle_id !== $vehicle->id) {
-                $replacement = $routeAssignment->vehicle?->number ?: 'another bus';
+            if ($routeSchedule && $routeSchedule->vehicle_id && $routeSchedule->vehicle_id !== $vehicle->id) {
+                $replacement = $routeSchedule->vehicle?->number ?: 'another bus';
 
                 return response()->json([
                     'success' => false,
-                    'message' => "Bus {$vehicle->number} is not running its normal route today. Today's assigned vehicle is {$replacement}.",
+                    'message' => "Bus {$vehicle->number} is not assigned to this route in the active Schedule. The assigned vehicle is {$replacement}.",
                 ], 422);
             }
 
-            $assignment = $routeAssignment;
+            $schedule = $routeSchedule;
         }
 
-        $route = $assignment?->route ?: $vehicle->route;
-        $driver = $assignment?->driver ?: $vehicle->driver;
+        if ($schedule?->status === 'Cancelled') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This route is currently marked Cancelled in the active Schedule.',
+            ], 422);
+        }
+
+        $route = $schedule?->route ?: $vehicle->route;
+        $driver = $schedule?->driver ?: $vehicle->driver;
 
         if (!$route) {
             return response()->json([
@@ -101,8 +101,8 @@ class ScannerController extends Controller
             ], 422);
         }
 
-        if ($assignment) {
-            $stops = $assignment->stopsWithTimes()->map(function (array $item) {
+        if ($schedule) {
+            $stops = $schedule->stopsWithTimes()->map(function (array $item) {
                 return [
                     'id'       => $item['stop']->id,
                     'name'     => $item['stop']->name,
@@ -111,7 +111,7 @@ class ScannerController extends Controller
                 ];
             })->values();
         } else {
-            $stops = $route->routeStops->map(fn ($stop) => [
+            $stops = $route->Stops->map(fn ($stop) => [
                 'id'       => $stop->id,
                 'name'     => $stop->name,
                 'sequence' => $stop->sequence,
@@ -142,9 +142,9 @@ class ScannerController extends Controller
             ],
             'stops' => $stops,
             'assignment' => [
-                'today_specific' => (bool) $assignment,
-                'status'         => $assignment?->status,
-                'departure_time' => $assignment?->estimated_departure_time,
+                'schedule_specific' => (bool) $schedule,
+                'status'         => $schedule?->status,
+                'departure_time' => $schedule?->estimated_departure_time,
             ],
         ]);
     }

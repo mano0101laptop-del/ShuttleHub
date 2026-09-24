@@ -436,5 +436,3 @@ the code — check:
   fresh one: the new `unique(['passenger_id','date'])` constraint on
   `attendances` will fail if duplicate rows already exist for the same
   passenger/day — de-duplicate first.
-"# ShuttleHub" 
-"# ShuttleHub" 

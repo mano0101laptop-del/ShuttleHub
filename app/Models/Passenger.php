@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 class Passenger extends Model
 {
@@ -14,15 +13,11 @@ class Passenger extends Model
 
     protected $fillable = [
         'user_id',
-        'name', 'roll', 'department', 'stop', 'status',
+        'name', 'roll', 'contact_number', 'passenger_type', 'department', 'address',
+        'photo_path', 'emergency_contact', 'stop', 'status',
         'approval_status',
         'cancellation_status', 'cancellation_reason', 'cancellation_requested_at',
-        'route_id', 'route_stop_id', 'driver_id', 'vehicle_id', 'pickup_time', 'dropoff_time',
-        'qr_token', 'fingerprint_hash', 'fingerprint_enrolled',
-    ];
-
-    protected $casts = [
-        'fingerprint_enrolled' => 'boolean',
+        'route_id', 'stop_id', 'driver_id', 'vehicle_id', 'pickup_time', 'dropoff_time',
     ];
 
     public function user(): BelongsTo
@@ -35,9 +30,9 @@ class Passenger extends Model
         return $this->belongsTo(Route::class);
     }
 
-    public function routeStop(): BelongsTo
+    public function Stop(): BelongsTo
     {
-        return $this->belongsTo(RouteStop::class);
+        return $this->belongsTo(Stop::class);
     }
 
     public function assignedDriver(): BelongsTo
@@ -50,11 +45,6 @@ class Passenger extends Model
         return $this->belongsTo(Vehicle::class, 'vehicle_id');
     }
 
-    public function attendances(): HasMany
-    {
-        return $this->hasMany(Attendance::class);
-    }
-
     public function feePayments(): HasMany
     {
         return $this->hasMany(FeePayment::class);
@@ -65,8 +55,8 @@ class Passenger extends Model
     {
         return $this->feePayments()
             ->where('status', 'approved')
-            ->whereDate('qr_expires_at', '>=', now()->toDateString())
-            ->orderByDesc('qr_expires_at')
+            ->whereDate('valid_until', '>=', now()->toDateString())
+            ->orderByDesc('valid_until')
             ->first();
     }
 
@@ -74,20 +64,6 @@ class Passenger extends Model
     public function pendingFeePayment(): ?FeePayment
     {
         return $this->feePayments()->where('status', 'pending')->latest()->first();
-    }
-
-    public static function generateQrToken(): string
-    {
-        do {
-            $token = strtoupper(Str::random(12));
-        } while (self::where('qr_token', $token)->exists());
-
-        return $token;
-    }
-
-    public function qrUrl(): string
-    {
-        return route('attendance.scan', ['token' => $this->qr_token]);
     }
 
     public function isPending(): bool  { return $this->approval_status === 'pending'; }
@@ -102,12 +78,10 @@ class Passenger extends Model
     }
 
     /**
-     * The QR pass (attendance + fee proof) is only "live" once the transport
-     * application has been approved AND the current month's fee has been
-     * paid and approved. There is no separate fee QR — this single token
-     * covers both.
+     * True once the transport application has been approved AND the current
+     * month's fee has been paid and approved.
      */
-    public function qrIsActive(): bool
+    public function hasActivePass(): bool
     {
         return $this->isApproved() && $this->activeFeePayment() !== null;
     }

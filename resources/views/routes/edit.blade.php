@@ -37,7 +37,7 @@
             @include('routes.partials.stops-repeater', [
               'stops' => old('stop_name')
                 ? collect(old('stop_name'))->map(fn($n, $i) => ['name' => $n, 'eta' => old('stop_eta.'.$i)])
-                : $tmsroute->routeStops->map(fn($s) => ['name' => $s->name, 'eta' => $s->eta])
+                : $tmsroute->Stops->map(fn($s) => ['name' => $s->name, 'eta' => $s->eta])
             ])
             <div class="lf-group">
               <label class="lf-label">Assign Vehicle</label>
