@@ -28,7 +28,9 @@
               <div class="lf-group"><label class="lf-label">Department</label><div class="lf-input-wrap"><i class="fas fa-building-columns"></i><input class="lf-input" name="department" value="{{ old('department') }}"></div></div>
               <div class="lf-group"><label class="lf-label">Status *</label><div class="lf-input-wrap"><i class="fas fa-circle-dot"></i><select class="lf-input" name="status" required><option value="Active" {{ old('status','Active')==='Active'?'selected':'' }}>Active</option><option value="Inactive" {{ old('status')==='Inactive'?'selected':'' }}>Inactive</option></select></div></div>
               <div class="lf-group"><label class="lf-label">Address *</label><div class="lf-input-wrap"><i class="fas fa-house"></i><input class="lf-input" name="address" value="{{ old('address') }}" required></div></div>
-              <div class="lf-group"><label class="lf-label">Emergency Contact *</label><div class="lf-input-wrap"><i class="fas fa-phone-volume"></i><input class="lf-input" type="tel" name="emergency_contact" value="{{ old('emergency_contact') }}" required></div></div>
+              <div class="lf-group"><label class="lf-label">Login Email *</label><div class="lf-input-wrap"><i class="fas fa-envelope"></i><input class="lf-input" type="email" name="login_email" value="{{ old('login_email') }}" required></div></div>
+              <div class="lf-group"><label class="lf-label">Login Password*</label><div class="lf-input-wrap"><i class="fas fa-lock"></i><input class="lf-input" type="password" name="login_password" value="{{ old('login_password') }}" required></div></div>
+               <div class="lf-group"><label class="lf-label">Emergency Contact *</label><div class="lf-input-wrap"><i class="fas fa-phone-volume"></i><input class="lf-input" type="tel" name="emergency_contact" value="{{ old('emergency_contact') }}" required></div></div>
             </div>
 
             <div style="margin:22px 0 12px;padding-top:18px;border-top:1px solid var(--color-border);">

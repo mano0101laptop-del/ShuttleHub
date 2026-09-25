@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('stop')->nullable();
             $table->string('status')->default('Active'); // Active, Inactive
             $table->foreignId('route_id')->nullable()->constrained()->nullOnDelete();
+            
             $table->timestamps();
         });
     }
