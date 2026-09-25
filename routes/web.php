@@ -84,7 +84,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/schedule/{schedule}/edit',     [ScheduleController::class, 'edit'])->name('schedule.edit');
         Route::put('/schedule/{schedule}',          [ScheduleController::class, 'update'])->name('schedule.update');
         Route::delete('/schedule/{schedule}',       [ScheduleController::class, 'destroy'])->name('schedule.destroy');
-    });
+   Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
+        Route::put('/announcements/{announcement}', [AnnouncementController::class, 'update'])->name('announcements.update');
+        Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');
+        });
 
     /*
     |--------------------------------------------------------------------
@@ -96,6 +99,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:incharge')->group(function () {
         Route::post('/fee-payments/{feePayment}/approve', [FeePaymentController::class, 'approve'])->name('fee-payments.approve');
         Route::post('/fee-payments/{feePayment}/reject', [FeePaymentController::class, 'reject'])->name('fee-payments.reject');
+    
     });
 
     /*
@@ -145,9 +149,7 @@ Route::middleware('auth')->group(function () {
         // Announcements — Admin full management (create/edit/delete). The
         // read-only listing route (announcements.index) lives above, in the
         // Admin + Incharge operational read-access group.
-        Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
-        Route::put('/announcements/{announcement}', [AnnouncementController::class, 'update'])->name('announcements.update');
-        Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');
+        
 
         // Complaints & feedback — Admin full management
         Route::get('/complaints', [ComplaintController::class, 'index'])->name('complaints.index');
@@ -164,7 +166,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/staff/{user}/edit', [StaffController::class, 'edit'])->name('staff.edit');
         Route::put('/staff/{user}',      [StaffController::class, 'update'])->name('staff.update');
         Route::delete('/staff/{user}',   [StaffController::class, 'destroy'])->name('staff.destroy');
-    });
+    
+        });
 
     /*
     |--------------------------------------------------------------------
