@@ -45,7 +45,7 @@ class FeePayment extends Model
     public function isApproved(): bool { return $this->status === 'approved'; }
     public function isRejected(): bool { return $this->status === 'rejected'; }
 
-    /** Approved AND the pass hasn't rolled past the paid month yet. */
+    
     public function isActive(): bool
     {
         return $this->isApproved()

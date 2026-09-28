@@ -48,9 +48,7 @@
         </div>
       </div>
       @else
-      <div class="alert-note mb-3" style="background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.18);border-radius:10px;padding:12px 16px;font-size:12.5px;color:rgba(30,27,46,.65);">
-        <i class="fas fa-circle-info" style="color:#7C3AED;margin-right:6px;"></i> View-only — publishing, editing and removing announcements is handled by Admin.
-      </div>
+     
       @endif
 
       <div class="card">

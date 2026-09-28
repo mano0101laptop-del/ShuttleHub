@@ -19,9 +19,7 @@ return new class extends Migration
             $table->index(['route_id', 'sequence']);
         });
 
-        // Backfill: for any existing route, seed a single stop row using its
-        // current "to" destination so routes created before this feature
-        // still show at least one stop and nothing appears broken.
+        
         $routes = \DB::table('routes')->select('id', 'to')->get();
         foreach ($routes as $route) {
             \DB::table('route_stops')->insert([

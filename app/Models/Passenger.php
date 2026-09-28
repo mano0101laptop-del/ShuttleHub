@@ -50,7 +50,7 @@ class Passenger extends Model
         return $this->hasMany(FeePayment::class);
     }
 
-    /** The most recent fee payment that is currently approved & not expired (if any). */
+  
     public function activeFeePayment(): ?FeePayment
     {
         return $this->feePayments()
@@ -60,7 +60,7 @@ class Passenger extends Model
             ->first();
     }
 
-    /** A payment still awaiting admin review, if the passenger has one. */
+    
     public function pendingFeePayment(): ?FeePayment
     {
         return $this->feePayments()->where('status', 'pending')->latest()->first();
@@ -77,10 +77,7 @@ class Passenger extends Model
         return $this->hasMany(Complaint::class);
     }
 
-    /**
-     * True once the transport application has been approved AND the current
-     * month's fee has been paid and approved.
-     */
+    
     public function hasActivePass(): bool
     {
         return $this->isApproved() && $this->activeFeePayment() !== null;

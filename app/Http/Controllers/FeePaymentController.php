@@ -245,15 +245,7 @@ class FeePaymentController extends Controller
         return \Illuminate\Support\Facades\Storage::disk('local')->response($feePayment->screenshot_path);
     }
 
-    /*
-    |--------------------------------------------------------------------
-    | STRIPE — sandbox/test-mode card payment (alternative to manual
-    | bank-transfer + screenshot). Uses Stripe Checkout: we create a
-    | session, redirect the passenger to Stripe's hosted payment page,
-    | and confirm the result by re-fetching the session on return (no
-    | public webhook endpoint required for this to work correctly).
-    |--------------------------------------------------------------------
-    */
+    
 
     // Passenger: start a Stripe Checkout session for the next payable month
     public function stripeCheckout(Request $request)
@@ -277,10 +269,7 @@ class FeePaymentController extends Controller
 
         $month    = $this->nextPayableMonth($passenger);
         $currency = strtolower(config('services.stripe.currency', 'pkr'));
-        // The amount charged to the card always matches FeeSetting::amount() —
-        // the same figure shown everywhere else in the app — converted to
-        // Stripe's required smallest currency unit (e.g. cents), never a
-        // hardcoded or separately-maintained value.
+        
         $amount   = FeeSetting::amount();
 
         $session = $stripe->createCheckoutSession([
@@ -302,8 +291,6 @@ class FeePaymentController extends Controller
             ]],
         ]);
 
-        // Reserve the record now so we know which passenger/month a returning
-        // session_id belongs to, even if the browser never redirects back.
         FeePayment::create([
             'passenger_id'                => $passenger->id,
             'month'                       => $month,
@@ -317,7 +304,7 @@ class FeePaymentController extends Controller
         return redirect($session['url']);
     }
 
-    // Stripe redirects here after a successful checkout — confirm with Stripe, then activate
+   
     public function stripeSuccess(Request $request)
     {
         $sessionId = $request->query('session_id');
@@ -325,7 +312,7 @@ class FeePaymentController extends Controller
 
         $payment = FeePayment::where('stripe_checkout_session_id', $sessionId)->firstOrFail();
 
-        // Only the passenger who owns this payment (or staff) may land here
+       
         $isOwner = $payment->passenger && $payment->passenger->user_id === Auth::id();
         abort_unless($isOwner || in_array(Auth::user()->role, ['admin', 'incharge'], true), 403);
 
@@ -348,13 +335,12 @@ class FeePaymentController extends Controller
             'Payment successful! Your transport pass is now active for ' . $payment->monthLabel() . '.');
     }
 
-    // Stripe redirects here if the passenger cancels/abandons checkout
+    
     public function stripeCancel(Request $request)
     {
         $sessionId = $request->query('session_id');
 
-        // Clean up the reserved pending record so an abandoned checkout
-        // doesn't block the passenger from paying again.
+        
         if ($sessionId) {
             FeePayment::where('stripe_checkout_session_id', $sessionId)
                 ->where('status', 'pending')
@@ -365,20 +351,16 @@ class FeePaymentController extends Controller
         return redirect()->route('fee.my')->with('error', 'Card payment was cancelled. No charge was made — you can try again or pay via bank transfer below.');
     }
 
-    /*
-    |--------------------------------------------------------------------
-    | Helpers
-    |--------------------------------------------------------------------
-    */
+    
 
-    // The next calendar month a passenger is allowed to submit a payment for.
+   
     private function nextPayableMonth(Passenger $passenger): string
     {
         $currentMonth = now()->format('Y-m');
 
         $active = $passenger->activeFeePayment();
         if ($active && $active->month >= $currentMonth) {
-            // Already covered for this month (or paid ahead) — offer the following month
+            
             return Carbon::createFromFormat('Y-m', $active->month)->addMonth()->format('Y-m');
         }
 

@@ -39,8 +39,8 @@ class UserSeeder extends Seeder
 
         foreach ($users as $userData) {
             User::firstOrCreate(
-                ['email' => $userData['email']],  // match on email
-                $userData                          // fill these if creating
+                ['email' => $userData['email']],  
+                $userData                          
             );
         }
     }

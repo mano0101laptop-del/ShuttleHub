@@ -10,10 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 class ComplaintController extends Controller
 {
-    /**
-     * Passenger self-service form. Admin never creates complaints — Admin
-     * only receives and manages the ones passengers submit (see index()).
-     */
+    
     public function create()
     {
         $drivers = Driver::where('status', 'Active')->orderBy('name')->get(['id', 'name']);
@@ -47,7 +44,7 @@ class ComplaintController extends Controller
         return redirect()->route('complaints.create')->with('success', 'Your ' . $validated['type'] . ' has been submitted to the admin.');
     }
 
-    // Admin: complete review and management queue — receives complaints only, never creates them.
+ 
     public function index()
     {
         $complaints = Complaint::with('passenger', 'againstDriver', 'againstPassenger')

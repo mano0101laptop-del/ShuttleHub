@@ -9,10 +9,7 @@ use Illuminate\Support\Facades\Auth;
 
 class MessageController extends Controller
 {
-    /**
-     * Driver-role users land straight in their own thread.
-     * Admin/incharge users see a list of driver threads to pick from.
-     */
+    
     public function index()
     {
         $user = Auth::user();
@@ -32,7 +29,7 @@ class MessageController extends Controller
         return view('messages.admin-index', compact('driverUsers'));
     }
 
-    /** Open (and mark read) the thread belonging to a specific driver user. */
+    
     public function thread(int $driverUserId)
     {
         $user = Auth::user();
@@ -48,7 +45,7 @@ class MessageController extends Controller
             ->oldest()
             ->get();
 
-        // Mark incoming messages (not sent by the current viewer) as read
+       
         Message::where('driver_user_id', $driverUserId)
             ->where('sender_id', '!=', $user->id)
             ->whereNull('read_at')

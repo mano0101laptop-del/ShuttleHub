@@ -12,7 +12,7 @@ class PassengerSeeder extends Seeder
 {
     public function run(): void
     {
-        // ── Admin-created passengers (no linked user account, auto-approved) ──
+        
         $adminCreated = [
             ['name' => 'Ahmad Raza',     'roll' => 'CS-2201-001', 'department' => 'Computer Science', 'passenger_type' => 'Student', 'contact_number' => '0300-1110001', 'emergency_contact' => '0300-9990001', 'address' => 'House 12, Gulberg, Gujranwala', 'stop' => 'Gulberg Chowk',       'route' => 'Route A - Gulberg'],
             ['name' => 'Hassan Ali',     'roll' => 'CS-2201-002', 'department' => 'Computer Science', 'passenger_type' => 'Student', 'contact_number' => '0300-1110002', 'emergency_contact' => '0300-9990002', 'address' => 'House 8, Model Town, Gujranwala', 'stop' => 'Model Town Link Rd',  'route' => 'Route B - Model Town'],
@@ -43,7 +43,7 @@ class PassengerSeeder extends Seeder
             );
         }
 
-        // ── Self-registered passengers (own user account, mixed approval states) ──
+        
         $selfRegistered = [
             ['name' => 'Bilal Aslam',   'email' => 'bilal.aslam@student.edu',   'department' => 'Computer Science', 'passenger_type' => 'Student', 'contact_number' => '0301-2220001', 'emergency_contact' => '0301-8880001', 'address' => 'Township Block A, Gujranwala', 'stop' => 'Township Block A',  'route' => null,                      'status' => 'approved'],
             ['name' => 'Mahnoor Khan',  'email' => 'mahnoor.khan@student.edu',  'department' => 'Software Eng.',    'passenger_type' => 'Student', 'contact_number' => '0301-2220002', 'emergency_contact' => '0301-8880002', 'address' => 'DHA Phase 5, Gujranwala', 'stop' => 'DHA Phase 5 Gate 2','route' => 'Route E - DHA Phase 5',   'status' => 'approved'],

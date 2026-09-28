@@ -10,8 +10,7 @@ return new class extends Migration
     {
         Schema::create('messages', function (Blueprint $table) {
             $table->id();
-            // The driver (user) this conversation belongs to — an admin/incharge
-            // can reply on behalf of "the office", so threads are keyed per driver.
+          
             $table->foreignId('driver_user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('sender_id')->constrained('users')->cascadeOnDelete();
             $table->text('body');

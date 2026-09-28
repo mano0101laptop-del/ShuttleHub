@@ -11,14 +11,14 @@ return new class extends Migration
     {
         Schema::table('passengers', function (Blueprint $table) {
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete()->after('id');
-            // nullable first so existing rows don't break
+            
             $table->string('approval_status')->nullable()->after('status');
         });
 
-        // All existing passengers (created by admin before this migration) are already approved
+        
         DB::table('passengers')->whereNull('approval_status')->update(['approval_status' => 'approved']);
 
-        // Make non-nullable with default for future rows
+        
         Schema::table('passengers', function (Blueprint $table) {
             $table->string('approval_status')->default('pending')->nullable(false)->change();
         });

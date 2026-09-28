@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('phone');
             $table->string('license')->unique();
             $table->string('experience')->nullable();
-            $table->string('status')->default('Active'); // Active, Inactive
+            $table->string('status')->default('Active'); 
             $table->foreignId('vehicle_id')->nullable()->constrained()->nullOnDelete();
             $table->timestamps();
         });

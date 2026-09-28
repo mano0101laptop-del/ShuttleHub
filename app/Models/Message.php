@@ -13,13 +13,13 @@ class Message extends Model
         'read_at' => 'datetime',
     ];
 
-    /** The driver-role user this thread belongs to. */
+    
     public function driverUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'driver_user_id');
     }
 
-    /** Whoever actually wrote this particular message (driver or admin/incharge). */
+    
     public function sender(): BelongsTo
     {
         return $this->belongsTo(User::class, 'sender_id');

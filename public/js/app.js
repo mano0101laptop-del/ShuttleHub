@@ -1,6 +1,4 @@
-// Shuttle Hub — shared front-end behaviour.
-// Intentionally tiny: this app is server-rendered Blade, not an SPA, so the
-// only cross-page JS need is the mobile sidebar toggle.
+
 document.addEventListener('DOMContentLoaded', function () {
   var hamburger = document.getElementById('tb-hamburger');
   var sidebar   = document.getElementById('sidebar');

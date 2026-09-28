@@ -36,19 +36,18 @@ class User extends Authenticatable
     public function isPassenger(): bool { return $this->role === 'passenger'; }
     public function isDriver(): bool    { return $this->role === 'driver'; }
 
-    /** Linked Passenger record (only for passenger-role users) */
+   
     public function passenger()
     {
         return $this->hasOne(Passenger::class);
     }
 
-    /** Linked Driver profile (only for driver-role users) */
     public function driver()
     {
         return $this->hasOne(Driver::class);
     }
 
-    /** Messages in this user's driver-portal thread (only meaningful for driver-role users) */
+    
     public function driverMessages()
     {
         return $this->hasMany(Message::class, 'driver_user_id');

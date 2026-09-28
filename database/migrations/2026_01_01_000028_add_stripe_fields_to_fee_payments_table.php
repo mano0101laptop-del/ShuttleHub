@@ -4,17 +4,6 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * Adds Stripe Checkout support alongside the existing manual (TID +
- * screenshot) payment method.
- *
- * `payment_method` distinguishes the two flows:
- *   manual -> tid + screenshot_path are required, admin approves by hand
- *   stripe -> tid/screenshot are not used; stripe_session_id +
- *             stripe_payment_intent identify the charge, and the payment
- *             is auto-approved the moment Stripe confirms it (either via
- *             the success redirect or the webhook, whichever lands first)
- */
 return new class extends Migration
 {
     public function up(): void

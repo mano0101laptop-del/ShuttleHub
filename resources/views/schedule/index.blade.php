@@ -14,15 +14,7 @@
       @if(session('success')) <div class="alert-success">{{ session('success') }}</div> @endif
       @if(session('error')) <div class="alert-err">{{ session('error') }}</div> @endif
 
-      <div class="card mb-3">
-        <div class="card-body" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-          <div>
-            <div style="font-weight:700;color:var(--color-text);">Persistent Transport Schedule</div>
-            <div style="font-size:12px;color:var(--color-text-muted);margin-top:3px;">The saved Schedule remains active every day until the Transport Incharge manually updates it. Admin has view-only access.</div>
-          </div>
-          <div style="margin-left:auto;font-size:13px;color:var(--color-text-muted);"><strong>{{ $schedules->count() }}</strong> route schedule(s)</div>
-        </div>
-      </div>
+      
 
       @forelse($schedules as $schedule)
         @php

@@ -2,17 +2,7 @@
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Third Party Services
-    |--------------------------------------------------------------------------
-    |
-    | This file is for storing the credentials for third party services such
-    | as Mailgun, Postmark, AWS and more. This file provides the de facto
-    | location for this type of information, allowing packages to have
-    | a conventional file to locate the various service credentials.
-    |
-    */
+    
 
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
@@ -35,16 +25,7 @@ return [
         ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Stripe (Sandbox / Test Mode payment for the transport fee)
-    |--------------------------------------------------------------------------
-    | key       — publishable key (pk_test_... in sandbox)
-    | secret    — secret key (sk_test_... in sandbox)
-    | currency  — ISO currency code Stripe should charge in. Must be a
-    |             currency your Stripe account actually supports; this is
-    |             also the currency the rest of the app displays amounts in.
-    */
+   
     'stripe' => [
         'key'      => env('STRIPE_KEY'),
         'secret'   => env('STRIPE_SECRET'),

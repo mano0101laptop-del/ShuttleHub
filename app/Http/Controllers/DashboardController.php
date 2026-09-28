@@ -123,8 +123,6 @@ class DashboardController extends Controller
             'open_complaints'       => $openComplaints,
         ];
 
-        // Recent fee-payment activity (approved/rejected/pending) — the most
-        // recently touched fee records, newest first.
         $recent_activity = FeePayment::with('passenger')
             ->whereDate('updated_at', today())
             ->latest('updated_at')

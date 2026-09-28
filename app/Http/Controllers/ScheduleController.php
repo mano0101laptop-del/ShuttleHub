@@ -75,8 +75,7 @@ class ScheduleController extends Controller
             $passengerIds = collect($request->input('passenger_ids', []))->filter()->unique()->values();
 
             $schedule = Schedule::create([
-                // Legacy table compatibility only. This value is never used to
-                // rotate, reset, select, or replace the persistent Schedule.
+               
                 'date'                     => today()->toDateString(),
                 'route_id'                 => $validated['route_id'],
                 'driver_id'                => $validated['driver_id'],
@@ -155,8 +154,7 @@ class ScheduleController extends Controller
             $previousRouteId = $schedule->route_id;
 
             $schedule->update([
-                // Intentionally do not touch the legacy `date` column. The
-                // Schedule changes only through this explicit user update.
+               
                 'route_id'                 => $validated['route_id'],
                 'driver_id'                => $validated['driver_id'],
                 'vehicle_id'               => $validated['vehicle_id'],
@@ -169,9 +167,7 @@ class ScheduleController extends Controller
             $this->syncStops($schedule, $request);
             $this->syncPassengers($schedule, $request);
 
-            // If an existing Schedule is moved to another route, remove only
-            // obsolete legacy rows for its former route so an old date-based
-            // assignment cannot become active again by accident.
+          
             if ((int) $previousRouteId !== (int) $schedule->route_id) {
                 Schedule::where('route_id', $previousRouteId)
                     ->where('id', '!=', $schedule->id)
@@ -189,8 +185,7 @@ class ScheduleController extends Controller
 
         $routeId = $schedule->route_id;
 
-        // Remove legacy date-based rows for this route too, otherwise deleting
-        // the current Schedule could reactivate an older historical row.
+     
         Schedule::where('route_id', $routeId)->delete();
 
         return redirect()->route('schedule.index')

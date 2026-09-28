@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('roll')->unique();
             $table->string('department');
             $table->string('stop')->nullable();
-            $table->string('status')->default('Active'); // Active, Inactive
+            $table->string('status')->default('Active'); 
             $table->foreignId('route_id')->nullable()->constrained()->nullOnDelete();
             
             $table->timestamps();

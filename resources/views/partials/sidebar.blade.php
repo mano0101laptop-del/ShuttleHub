@@ -14,7 +14,7 @@
   <button class="sb-close" id="sb-close" aria-label="Close menu"><i class="fas fa-xmark"></i></button>
 
   <div class="sb-logo">
-    <div class="sb-logo-icon"><i class="fas fa-circle-nodes"></i></div>
+    <div class="sb-logo-icon"><i class="fas fa-van-shuttle"></i></div>
     <div class="sb-logo-text"><span>Shuttle</span> Hub</div>
   </div>
   <div class="sb-role-badge">

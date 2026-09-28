@@ -17,9 +17,7 @@ class StripeClient
 {
     private const BASE_URL = 'https://api.stripe.com/v1';
 
-    // Currencies Stripe treats as having no fractional/smallest unit —
-    // i.e. the amount sent to Stripe is NOT multiplied by 100 for these.
-    // https://docs.stripe.com/currencies#zero-decimal
+    
     private const ZERO_DECIMAL_CURRENCIES = [
         'bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg',
         'rwf', 'ugx', 'vnd', 'vuv', 'xaf', 'xof', 'xpf',
@@ -34,11 +32,7 @@ class StripeClient
         return !empty($this->secretKey);
     }
 
-    /**
-     * Convert a decimal amount (e.g. 1500.00) into the integer smallest-unit
-     * value Stripe's API requires (e.g. 150000 for a 2-decimal currency,
-     * 1500 unchanged for a zero-decimal currency like JPY).
-     */
+   
     public function toSmallestUnit(float $amount, string $currency): int
     {
         $currency = strtolower($currency);
@@ -50,10 +44,7 @@ class StripeClient
         return (int) round($amount * 100);
     }
 
-    /**
-     * Create a Checkout Session for a one-time payment and return the
-     * decoded response (contains 'id' and 'url').
-     */
+    
     public function createCheckoutSession(array $params): array
     {
         $this->assertConfigured();
@@ -72,7 +63,7 @@ class StripeClient
         return $response->json();
     }
 
-    /** Retrieve a Checkout Session (used on the success redirect to confirm payment actually completed). */
+   
     public function retrieveCheckoutSession(string $sessionId): array
     {
         $this->assertConfigured();

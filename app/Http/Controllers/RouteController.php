@@ -90,13 +90,7 @@ class RouteController extends Controller
         ]);
     }
 
-    /**
-     * Replace this route's stops with whatever was submitted in the form,
-     * in the order they were submitted (that order becomes the sequence).
-     * Blank stop names are dropped. If nothing valid was submitted, a single
-     * stop matching the route's "to" destination is kept so the route
-     * always has at least one stop.
-     */
+    
     private function syncStops(Route $route, Request $request): void
     {
         $names = $request->input('stop_name', []);
@@ -120,7 +114,7 @@ class RouteController extends Controller
         }
 
         if ($sequence === 1) {
-            // nothing valid was submitted — fall back to the route's "to" field
+            
             Stop::create([
                 'route_id' => $route->id,
                 'name'     => $route->to,

@@ -4,20 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * One row per monthly fee submission from a passenger.
- *
- * Lifecycle:
- *   pending  -> passenger uploaded a payment screenshot + TID for a month
- *   approved -> admin verified it; the pass is valid until valid_until
- *               (end of the paid month)
- *   rejected -> admin declined it (see rejection_reason); passenger must
- *               resubmit
- *
- * `month` is stored as a 'YYYY-MM' string so a passenger can have at most
- * one meaningful payment per calendar month (enforced in the controller,
- * not a hard DB unique, so a rejected submission can be resubmitted).
- */
+
 return new class extends Migration
 {
     public function up(): void

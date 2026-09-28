@@ -14,9 +14,7 @@
         <div class="alert-success">{{ session('success') }}</div>
       @endif
 
-      <p style="font-size:13px;color:rgba(30,27,46,.55);margin-bottom:16px;">
-        Day-to-day transport operations. System configuration, enrollment approvals, payment controls, publishing announcements, complaints, and staff management are handled by Admin — you can view published announcements below.
-      </p>
+      
 
       {{-- Quick actions --}}
       <div class="stats-grid" style="margin-bottom:4px;">
@@ -26,15 +24,15 @@
         </a>
         <a href="{{ route('passengers.index') }}" class="stat-card" style="text-decoration:none;">
           <div class="stat-icon" style="background:rgba(37,99,235,.15);color:#2563EB;"><i class="fas fa-users"></i></div>
-          <div class="stat-info"><div class="stat-val" style="font-size:15px;">Passengers</div><div class="stat-lbl">Read-only passenger lookup</div></div>
+          <div class="stat-info"><div class="stat-val" style="font-size:15px;">Passengers</div><div class="stat-lbl">Review passenger information</div></div>
         </a>
         <a href="{{ route('messages.index') }}" class="stat-card" style="text-decoration:none;">
           <div class="stat-icon" style="background:rgba(22,163,74,.15);color:#16A34A;"><i class="fas fa-comments"></i></div>
-          <div class="stat-info"><div class="stat-val" style="font-size:15px;">Driver Messages</div><div class="stat-lbl">Coordinate with drivers</div></div>
+          <div class="stat-info"><div class="stat-val" style="font-size:15px;">Driver Messages</div><div class="stat-lbl">Communicate with drivers</div></div>
         </a>
         <a href="{{ route('announcements.index') }}" class="stat-card" style="text-decoration:none;">
           <div class="stat-icon" style="background:rgba(124,58,237,.15);color:#7C3AED;"><i class="fas fa-bullhorn"></i></div>
-          <div class="stat-info"><div class="stat-val" style="font-size:15px;">Announcements</div><div class="stat-lbl">View-only — published by Admin</div></div>
+          <div class="stat-info"><div class="stat-val" style="font-size:15px;">Announcements</div><div class="stat-lbl">Manage announcements</div></div>
         </a>
       </div>
 

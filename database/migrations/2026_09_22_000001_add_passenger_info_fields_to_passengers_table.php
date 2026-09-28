@@ -4,15 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * Adds the extra Passenger Information fields collected on the
- * registration form (contact number, passenger type, address and
- * emergency contact). `department` is relaxed to nullable because the
- * public registration form no longer collects it directly — the
- * broader "Passenger Type" (Student / Teacher / Staff) field replaces
- * it for self-registration, while admin-created records can still set
- * a department when relevant.
- */
+
 return new class extends Migration
 {
     public function up(): void

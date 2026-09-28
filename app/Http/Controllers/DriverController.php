@@ -18,7 +18,7 @@ class DriverController extends Controller
         return view('drivers.index', compact('drivers'));
     }
 
-    // ── Full driver profile — photo, CNIC, assigned vehicle/route, complaints ──
+    // driver profile — photo, CNIC, assigned vehicle/route, complaints 
     public function show(Driver $driver)
     {
         $driver->load('vehicle.route.Stops', 'user', 'complaintsAgainst.passenger');
@@ -33,13 +33,6 @@ class DriverController extends Controller
 
     public function store(Request $request)
     {
-        // NOTE: Driver uses SoftDeletes (a "delete" only sets deleted_at, the
-        // row still exists). Plain unique:drivers,license / unique:drivers,cnic
-        // rules query ALL rows including soft-deleted ones, so re-adding a
-        // driver after a previous one with the same license/CNIC was removed
-        // always failed validation with "already been taken" — this is the
-        // "driver not adding, shows error" bug. Scope the uniqueness check to
-        // only rows that are not soft-deleted.
         $request->validate([
             'name'                => 'required|string|max:255',
             'phone'               => 'required|string|max:20',
@@ -69,10 +62,7 @@ class DriverController extends Controller
         if ($request->hasFile('photo')) {
             $data['photo_path'] = $request->file('photo')->store('drivers/photos', 'public');
         }
-        // CNIC images are sensitive national-ID documents — stored on the PRIVATE
-        // 'local' disk (not 'public'), served only through the authenticated,
-        // role-checked route in showCnic() below. Never store these on a
-        // publicly-reachable disk.
+       
         if ($request->hasFile('cnic_front')) {
             $data['cnic_front_path'] = $request->file('cnic_front')->store('drivers/cnic', 'local');
         }
@@ -80,7 +70,7 @@ class DriverController extends Controller
             $data['cnic_back_path'] = $request->file('cnic_back')->store('drivers/cnic', 'local');
         }
 
-        // ── Auto-provision a driver login so they can access the driver portal ──
+     
         $loginEmail = $request->filled('email')
             ? $request->email
             : Str::slug($request->name) . '-' . Str::random(4) . '@drivers.shuttlehub.local';
@@ -98,8 +88,6 @@ class DriverController extends Controller
 
         $driver = Driver::create($data);
 
-        // Credentials are only ever shown once, right after creation — flash them
-        // to the session so the index page can display a one-time reveal card.
         return redirect()->route('drivers.index')->with('success', 'Driver added successfully! Login credentials issued below.')
             ->with('new_driver_credentials', [
                 'name'     => $driver->name,
@@ -154,7 +142,6 @@ class DriverController extends Controller
 
         $driver->update($data);
 
-        // Keep the linked login's name/email in sync
         if ($driver->user) {
             $driver->user->update([
                 'name'  => $request->name,
@@ -165,7 +152,7 @@ class DriverController extends Controller
         return redirect()->route('drivers.index')->with('success', 'Driver updated successfully!');
     }
 
-    // ── Admin: reset a driver's portal password and reveal it once ──
+    //  reset a driver password 
     public function resetPassword(Driver $driver)
     {
         if (!$driver->user) {
@@ -188,8 +175,7 @@ class DriverController extends Controller
         $user = $driver->user;
         $driver->delete();
 
-        // Removing a driver from transport management should also remove the
-        // driver's portal login so an old account cannot continue to sign in.
+
         if ($user) {
             $user->delete();
         }
@@ -197,7 +183,7 @@ class DriverController extends Controller
         return redirect()->route('drivers.index')->with('success', 'Driver and linked login removed successfully!');
     }
 
-    // ── Driver self-service: change their own portal password ──
+    //  Driver self-service: change their own portal password 
     public function updateOwnPassword(Request $request)
     {
         $request->validate([
@@ -216,11 +202,7 @@ class DriverController extends Controller
         return redirect()->route('dashboard')->with('success', 'Password changed successfully.');
     }
 
-    // ── Driver self-service: upload/replace my own profile picture ──
-    // Reachable only by the logged-in driver themselves (role:driver route
-    // middleware + looked up by the authenticated user's own id — never by
-    // a driver record id from the request), so one driver can't touch
-    // another driver's photo.
+    
     public function updateOwnPhoto(Request $request)
     {
         $driver = Driver::where('user_id', $request->user()->id)->firstOrFail();
@@ -234,7 +216,7 @@ class DriverController extends Controller
             'photo.max'      => 'The image must be smaller than 4MB.',
         ]);
 
-        // Remove the old file so orphaned uploads don't pile up on disk.
+        
         if ($driver->photo_path) {
             \Illuminate\Support\Facades\Storage::disk('public')->delete($driver->photo_path);
         }
@@ -246,10 +228,6 @@ class DriverController extends Controller
         return redirect()->route('dashboard')->with('success', 'Profile picture updated successfully!');
     }
 
-    // ── Stream a driver's CNIC image from the private disk ──
-    // Route is already behind role:admin,incharge (see routes/web.php), so
-    // only authenticated operational staff can reach this — no public URL,
-    // no guessable path, unlike the old public-disk storage.
     public function showCnic(Driver $driver, string $side)
     {
         abort_unless(in_array($side, ['front', 'back'], true), 404);

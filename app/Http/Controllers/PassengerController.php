@@ -15,7 +15,7 @@ class PassengerController extends Controller
 {
     public function index()
     {
-        // Administrative approval queues are intentionally not exposed to Incharge.
+        
         $pendingPassengers = collect();
         $cancellationRequests = collect();
 
@@ -193,9 +193,7 @@ class PassengerController extends Controller
         return redirect()->back()->with('success', "{$passenger->name}'s cancellation request has been rejected.");
     }
 
-    /**
-     * Passenger self-service profile photo used on the dashboard and transport card.
-     */
+    
     public function updateOwnPhoto(Request $request)
     {
         $request->validate([
@@ -221,9 +219,7 @@ class PassengerController extends Controller
         return redirect()->back()->with('success', 'Your profile photo has been updated and will now appear on your transport card.');
     }
 
-    /**
-     * Printable/downloadable two-sided digital transport card.
-     */
+    
     public function transportCard(Passenger $passenger)
     {
         abort_unless($passenger->isApproved(), 403, 'The transport card is available after the passenger is approved.');

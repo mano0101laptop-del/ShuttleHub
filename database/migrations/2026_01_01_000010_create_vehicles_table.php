@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('number')->unique();
             $table->string('type');
             $table->unsignedInteger('capacity');
-            $table->string('status')->default('Active'); // Active, Inactive, Breakdown
+            $table->string('status')->default('Active'); 
             $table->timestamps();
         });
     }

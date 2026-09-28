@@ -18,11 +18,7 @@ class FeeSetting extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    /**
-     * There is only ever one row. Fetch it (creating it with a 0 fee the
-     * very first time the app runs) instead of scattering
-     * firstOrCreate() calls across controllers.
-     */
+    
     public static function current(): self
     {
         return static::firstOrCreate(['id' => 1], ['monthly_fee' => 0]);
